@@ -245,7 +245,7 @@ jobs:
 
 
   job_auto_compile:
-    if: ${{ needs.job_check.outputs.has_update == 'true' && needs.job_check.outputs.prerelease == 'false' }}
+    if: ${{ needs.job_check.outputs.has_update == 'true' }}
     needs: job_check
     runs-on: ubuntu-latest
     name: build (${{ matrix.ver }}-${{ matrix.platform }})
