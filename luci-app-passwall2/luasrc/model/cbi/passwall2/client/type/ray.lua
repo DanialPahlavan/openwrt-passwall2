@@ -38,10 +38,6 @@ local ss_method_list = {
 
 local security_list = { "none", "auto", "aes-128-gcm", "chacha20-poly1305", "zero" }
 
-local header_type_list = {
-	"none", "srtp", "utp", "wechat-video", "dtls", "wireguard", "dns"
-}
-
 local xray_version = api.get_app_version("xray")
 
 o = s:option(ListValue, _n("protocol"), translate("Protocol"))
@@ -387,15 +383,22 @@ o = s:option(Value, _n("tls_serverName"), translate("Domain"))
 o:depends({ [_n("tls")] = true })
 o:depends({ [_n("protocol")] = "hysteria2" })
 
-if api.compare_versions(xray_version, "<", "26.1.31") then
+if api.compare_versions(os.date("%Y.%m.%d"), "<", "2026.6.1") then
 	o = s:option(Flag, _n("tls_allowInsecure"), translate("allowInsecure"), translate("Whether unsafe connections are allowed. When checked, Certificate validation will be skipped."))
 	o.default = "0"
 	o:depends({ [_n("tls")] = true, [_n("reality")] = false })
 	o:depends({ [_n("protocol")] = "hysteria2" })
 end
 
-o = s:option(Value, _n("tls_chain_fingerprint"), translate("TLS Chain Fingerprint (SHA256)"), translate("Once set, connects only when the server’s chain fingerprint matches."))
-o:depends({ [_n("tls")] = true, [_n("reality")] = false })
+if api.compare_versions(xray_version, ">=", "26.1.31") then
+	o = s:option(Value, _n("tls_CertSha"), translate("TLS Chain Fingerprint (SHA256)"), translate("Once set, connects only when the server’s chain fingerprint matches."))
+	o:depends({ [_n("tls")] = true, [_n("reality")] = false })
+	o:depends({ [_n("protocol")] = "hysteria2" })
+
+	o = s:option(Value, _n("tls_CertByName"), translate("TLS Certificate Name (CertName)"), translate("TLS is used to verify the leaf certificate name."))
+	o:depends({ [_n("tls")] = true, [_n("reality")] = false })
+	o:depends({ [_n("protocol")] = "hysteria2" })
+end
 
 o = s:option(Flag, _n("ech"), translate("ECH"))
 o.default = "0"
@@ -514,11 +517,17 @@ o:depends({ [_n("tcp_guise")] = "http" })
 
 -- [[ mKCP ]]--
 o = s:option(ListValue, _n("mkcp_guise"), translate("Camouflage Type"), translate('<br />none: default, no masquerade, data sent is packets with no characteristics.<br />srtp: disguised as an SRTP packet, it will be recognized as video call data (such as FaceTime).<br />utp: packets disguised as uTP will be recognized as bittorrent downloaded data.<br />wechat-video: packets disguised as WeChat video calls.<br />dtls: disguised as DTLS 1.2 packet.<br />wireguard: disguised as a WireGuard packet. (not really WireGuard protocol)<br />dns: Disguising traffic as DNS requests.'))
-for a, t in ipairs(header_type_list) do o:value(t) end
+o:value("none", "none")
+o:value("header-srtp", "srtp")
+o:value("header-utp", "utp")
+o:value("header-wechat", "wechat-video")
+o:value("header-dtls", "dtls")
+o:value("header-wireguard", "wireguard")
+o:value("header-dns", "dns")
 o:depends({ [_n("transport")] = "mkcp" })
 
 o = s:option(Value, _n("mkcp_domain"), translate("Camouflage Domain"), translate("Use it together with the DNS disguised type. You can fill in any domain."))
-o:depends({ [_n("mkcp_guise")] = "dns" })
+o:depends({ [_n("mkcp_guise")] = "header-dns" })
 
 o = s:option(Value, _n("mkcp_mtu"), translate("KCP MTU"))
 o.default = "1350"
@@ -716,7 +725,7 @@ o2.template = appname .. "/cbi/nodes_listvalue"
 o2.group = {}
 
 for k, v in pairs(nodes_list) do
-	if v.type == "Xray" and v.id ~= arg[1] and (not v.chain_proxy or v.chain_proxy == "") then
+	if v.id ~= arg[1] and (not v.chain_proxy or v.chain_proxy == "") then
 		o1:value(v.id, v.remark)
 		o1.group[#o1.group+1] = (v.group and v.group ~= "") and v.group or translate("default")
 		o2:value(v.id, v.remark)
