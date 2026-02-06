@@ -7,6 +7,18 @@ on:
   repository_dispatch:
   workflow_dispatch:
     inputs:
+      version:
+        description: 'Version to build (e.g., 1.0.0) - leave empty to auto-detect from Makefile'
+        required: false
+        default: ''
+      release_type:
+        description: 'Release Type'
+        required: true
+        default: 'stable'
+        type: choice
+        options:
+          - stable
+          - beta
       ssh:
         description: 'SSH connection to Actions'
         required: false
@@ -43,11 +55,33 @@ jobs:
           url_tags: https://api.github.com/repos/${{ env.passwall2 }}/releases/latest
         run: |
           cd luci-app-passwall2
-          latest_version=$(awk -F ':=' '/^PKG_VERSION:=|^PKG_RELEASE:=/ {print $2}' Makefile | sed ':a;N;s/\$(PKG_VERSION)-//;s/\n$//;s/\n/-/;ba')
+          # Get release_type input (defaults to 'stable' for repository_dispatch or empty)
+          release_type="${{ github.event.inputs.release_type }}"
+          if [ -z "$release_type" ]; then
+            release_type="stable"
+          fi
+          
+          # Check if version is provided via input, otherwise auto-detect from Makefile
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            latest_version="${{ github.event.inputs.version }}"
+          else
+            latest_version=$(awk -F ':=' '/^PKG_VERSION:=|^PKG_RELEASE:=/ {print $2}' Makefile | sed ':a;N;s/\$(PKG_VERSION)-//;s/\n$//;s/\n/-/;ba')
+          fi
+          
+          # Append -beta suffix if release type is beta
+          if [ "$release_type" == "beta" ]; then
+            latest_version="${latest_version}-beta"
+          fi
           echo "latest_version=${latest_version}" >> $GITHUB_OUTPUT
 
-          prerelease=$([ "${{ github.ref_name }}" == "main" ] && echo false || echo true)
+          # Set prerelease flag based on release_type
+          if [ "$release_type" == "beta" ]; then
+            prerelease=true
+          else
+            prerelease=$([ "${{ github.ref_name }}" == "main" ] && echo false || echo true)
+          fi
           echo "prerelease=${prerelease}" >> $GITHUB_OUTPUT
+          echo "release_type=${release_type}" >> $GITHUB_OUTPUT
 
           remote_latest_version=$(wget -qO- -t1 -T2 ${{env.url_tags}} | jq -r '.tag_name')
 
@@ -68,6 +102,11 @@ jobs:
         if: steps.check_version.outputs.has_update == 'true'
         run: |
           echo "## :mega:Update content" >> release.txt
+          if [ "${{ steps.check_version.outputs.release_type }}" == "beta" ]; then
+            echo "> [!WARNING]" >> release.txt
+            echo "> **This is a BETA release** - Use for testing only, not recommended for production." >> release.txt
+            echo "" >> release.txt
+          fi
           echo "![](https://img.shields.io/github/downloads/${{ env.passwall2 }}/${{steps.check_version.outputs.latest_version}}/total?style=flat-square)" >> release.txt
           echo "### Passwall2 Info" >> release.txt
           echo "**:minidisc: Passwall2 Version: ${{steps.check_version.outputs.latest_version}}**" >> release.txt
@@ -197,6 +236,7 @@ jobs:
           echo "CONFIG_AUTOREMOVE=n" >> .config
           echo "CONFIG_LUCI_LANG_zh_Hans=y" >> .config
           echo "CONFIG_LUCI_LANG_zh_Hant=y" >> .config
+          echo "CONFIG_LUCI_LANG_fa_ir=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-passwall2=m" >> .config
           make defconfig
           echo "make package/luci-app-passwall2/{clean,compile} -j$(nproc)"
@@ -484,6 +524,7 @@ jobs:
           echo "CONFIG_ALL=n" >> .config
           echo "CONFIG_AUTOREMOVE=n" >> .config
           echo "CONFIG_SIGNED_PACKAGES=n" >> .config
+          echo "CONFIG_LUCI_LANG_fa_ir=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-passwall2=m" >> .config
           echo "CONFIG_PACKAGE_luci-app-passwall2_Iptables_Transparent_Proxy=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-passwall2_Nftables_Transparent_Proxy=y" >> .config
