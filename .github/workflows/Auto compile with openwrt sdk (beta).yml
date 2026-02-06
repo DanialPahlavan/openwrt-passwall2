@@ -1,8 +1,8 @@
 #
 # Copyright (c) 2022-2023 SMALLPROGRAM <https://github.com/smallprogram>
-# Description: Auto compile
+# Description: Auto compile (Optimized for Beta)
 #
-name: "Auto compile with openwrt sdk"
+name: "Auto compile with openwrt sdk (Beta - Optimized)"
 on:
   repository_dispatch:
   workflow_dispatch:
@@ -14,10 +14,9 @@ on:
       release_type:
         description: 'Release Type'
         required: true
-        default: 'stable'
+        default: 'beta'
         type: choice
         options:
-          - stable
           - beta
       ssh:
         description: 'SSH connection to Actions'
@@ -48,6 +47,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.ref_name }}
+          path: luci-app-passwall2
 
       - name: Check version
         id: check_version
@@ -55,10 +55,10 @@ jobs:
           url_tags: https://api.github.com/repos/${{ env.passwall2 }}/releases/latest
         run: |
           cd luci-app-passwall2
-          # Get release_type input (defaults to 'stable' for repository_dispatch or empty)
+          # Get release_type input (defaults to 'beta' for this workflow)
           release_type="${{ github.event.inputs.release_type }}"
           if [ -z "$release_type" ]; then
-            release_type="stable"
+            release_type="beta"
           fi
           
           # Check if version is provided via input, otherwise auto-detect from Makefile
@@ -125,7 +125,7 @@ jobs:
 
 
   job_build_passwall2:
-    name: Build passwall2 [${{ matrix.ver }}]
+    name: Build passwall2 [${{ matrix.ver }}] (Optimized)
     needs: job_check
     if: needs.job_check.outputs.has_update == 'true'
     runs-on: ubuntu-latest
@@ -152,12 +152,55 @@ jobs:
           sudo -E apt-get -qq autoremove --purge
           sudo -E apt-get -qq clean
 
-      - name: Initialization environment
+      - name: Update package version in Makefile
+        if: github.event.inputs.version != ''
+        run: |
+          cd luci-app-passwall2
+          # Parse the version from input (e.g., "1.0.0" or "1.0.0-beta")
+          input_version="${{ github.event.inputs.version }}"
+          
+          # Extract version and release parts
+          if [[ "$input_version" == *"-beta" ]]; then
+            # Handle beta versions like "1.0.0-beta"
+            pkg_version=$(echo "$input_version" | sed 's/-beta$//')
+            pkg_release="1"
+          else
+            # Handle regular versions like "1.0.0"
+            pkg_version="$input_version"
+            pkg_release="1"
+          fi
+          
+          echo "Updating package version:"
+          echo "  Input version: $input_version"
+          echo "  PKG_VERSION: $pkg_version"
+          echo "  PKG_RELEASE: $pkg_release"
+          
+          # Update the Makefile
+          sed -i "s/^PKG_VERSION:=.*/PKG_VERSION:=$pkg_version/" Makefile
+          sed -i "s/^PKG_RELEASE:=.*/PKG_RELEASE:=$pkg_release/" Makefile
+          
+          # Verify the changes
+          echo "Updated Makefile:"
+          grep -E "^PKG_VERSION|^PKG_RELEASE" Makefile
+          
+          cd ..
+
+      - name: Initialization environment (with caching)
+        id: init
         run: |
           url_sdk="https://downloads.openwrt.org/snapshots/targets/x86/64/openwrt-sdk-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst"
-          wget $url_sdk
           file_name=$(echo $url_sdk | awk -F/ '{print $NF}')
-          mkdir sdk
+          
+          # Check if SDK is already cached
+          if [ -f "sdk_cache/$file_name" ]; then
+            echo "Using cached SDK"
+            cp sdk_cache/$file_name ./
+          else
+            echo "Downloading SDK"
+            wget $url_sdk
+          fi
+          
+          mkdir -p sdk
           if [[ $file_name == *.tar.xz ]]; then
             tar -xJf $file_name -C ./sdk --strip-components=1
           elif [[ $file_name == *.tar.zst ]]; then
@@ -182,9 +225,16 @@ jobs:
           cat feeds.conf.default >> feeds.tmp
           mv feeds.tmp feeds.conf.default
 
+          # Selective feed update - only update what we need
+          echo "Updating feeds selectively..."
+          ./scripts/feeds update passwall_packages passwall2 packages luci base-files
           
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
+          # Selective feed install - only install required packages
+          echo "Installing feeds selectively..."
+          ./scripts/feeds install -p passwall_packages -a
+          ./scripts/feeds install -p passwall2 luci-app-passwall2
+          ./scripts/feeds install -p luci luci-compat luci-lib-jsonc
+          ./scripts/feeds install -p packages coreutils coreutils-base64 coreutils-nohup curl ip-full libuci-lua resolveip tcping unzip
 
           #--------------------------------------begin_patches------------------------------------------
           echo "Start applying the patch"
@@ -221,7 +271,7 @@ jobs:
           echo "Patch application completed"
           #--------------------------------------end_patches--------------------------------------------
 
-      - name: Compile passwall2
+      - name: Compile passwall2 (Optimized)
         id: compile
         run: |
           cd sdk
@@ -230,6 +280,8 @@ jobs:
             config_apk_line=$(grep -n "USE_APK" Config-build.in | awk -F ':' '{print $1}')
             [ -n "$config_apk_line" ] && sed -n $(expr ${config_apk_line} + 2)p Config-build.in | grep "default y" >/dev/null ; [ $? == 0 ] && sed -i "$(expr ${config_apk_line} + 2)s/y/n/" Config-build.in
           fi
+          
+          # Optimized configuration - pre-select all packages to avoid runtime decisions
           echo "CONFIG_ALL_NONSHARED=n" > .config
           echo "CONFIG_ALL_KMODS=n" >> .config
           echo "CONFIG_ALL=n" >> .config
@@ -238,15 +290,64 @@ jobs:
           echo "CONFIG_LUCI_LANG_zh_Hant=y" >> .config
           echo "CONFIG_LUCI_LANG_fa=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-passwall2=m" >> .config
+          
+          # Enable all required dependencies explicitly
+          echo "CONFIG_PACKAGE_chinadns-ng=m" >> .config
+          echo "CONFIG_PACKAGE_dnsmasq-full=m" >> .config
+          echo "CONFIG_PACKAGE_dnsmasq_full_ipset=m" >> .config
+          echo "CONFIG_PACKAGE_ipset=m" >> .config
+          echo "CONFIG_PACKAGE_iptables=m" >> .config
+          echo "CONFIG_PACKAGE_iptables-nft=m" >> .config
+          echo "CONFIG_PACKAGE_iptables-zz-legacy=m" >> .config
+          echo "CONFIG_PACKAGE_iptables-mod-conntrack-extra=m" >> .config
+          echo "CONFIG_PACKAGE_iptables-mod-iprange=m" >> .config
+          echo "CONFIG_PACKAGE_iptables-mod-socket=m" >> .config
+          echo "CONFIG_PACKAGE_iptables-mod-tproxy=m" >> .config
+          echo "CONFIG_PACKAGE_kmod-ipt-nat=m" >> .config
+          echo "CONFIG_PACKAGE_coreutils=m" >> .config
+          echo "CONFIG_PACKAGE_coreutils-base64=m" >> .config
+          echo "CONFIG_PACKAGE_coreutils-nohup=m" >> .config
+          echo "CONFIG_PACKAGE_curl=m" >> .config
+          echo "CONFIG_PACKAGE_ip-full=m" >> .config
+          echo "CONFIG_PACKAGE_libuci-lua=m" >> .config
+          echo "CONFIG_PACKAGE_lua=m" >> .config
+          echo "CONFIG_PACKAGE_luci-compat=m" >> .config
+          echo "CONFIG_PACKAGE_luci-lib-jsonc=m" >> .config
+          echo "CONFIG_PACKAGE_resolveip=m" >> .config
+          echo "CONFIG_PACKAGE_tcping=m" >> .config
+          echo "CONFIG_PACKAGE_xray-core=m" >> .config
+          echo "CONFIG_PACKAGE_geoview=m" >> .config
+          echo "CONFIG_PACKAGE_v2ray-geoip=m" >> .config
+          echo "CONFIG_PACKAGE_v2ray-geosite=m" >> .config
+          echo "CONFIG_PACKAGE_unzip=m" >> .config
+          
           make defconfig
-          echo "make package/luci-app-passwall2/{clean,compile} -j$(nproc)"
-          make package/luci-app-passwall2/{clean,compile} -j$(nproc) V=s || make package/luci-app-passwall2/{clean,compile} -j1 V=s
+          
+          # Enable ccache for faster compilation
+          export CCACHE_DIR="$HOME/.ccache"
+          export CCACHE_MAXSIZE="1G"
+          ccache -M $CCACHE_MAXSIZE
+          
+          echo "make package/luci-app-passwall2/{clean,compile} -j$(nproc) with ccache"
+          # Use more aggressive parallel compilation
+          make package/luci-app-passwall2/{clean,compile} -j$(( $(nproc) + 2 )) V=s || make package/luci-app-passwall2/{clean,compile} -j1 V=s
           mkdir upload
           mv bin/packages/*/passwall2/luci-* upload/
           make clean
           cd upload
           echo "status=success" >> $GITHUB_OUTPUT
           echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+
+      - name: Cache SDK for next build
+        if: steps.compile.outputs.status == 'success'
+        uses: actions/cache@v4
+        with:
+          path: |
+            sdk_cache
+            sdk
+          key: sdk-${{ hashFiles('luci-app-passwall2/Makefile') }}
+          restore-keys: |
+            sdk-
 
       - name: Upload passwall2 ipks to release
         uses: softprops/action-gh-release@v2

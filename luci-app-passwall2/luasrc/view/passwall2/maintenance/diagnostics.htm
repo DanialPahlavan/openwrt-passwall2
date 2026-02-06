@@ -1,0 +1,145 @@
+<% local api=require "luci.passwall2.api" -%>
+    <style>
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-green {
+            background-color: #4CAF50;
+        }
+
+        .status-red {
+            background-color: #F44336;
+        }
+
+        .status-gray {
+            background-color: #9E9E9E;
+        }
+
+        .diag-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+    </style>
+
+    <script type="text/javascript">
+        //<![CDATA[
+        var services = ['haproxy', 'socks', 'index']; // index covers global/passwall
+
+        function update_status_indicator(id, status) {
+            var el = document.getElementById(id);
+            if (el) {
+                el.className = status ? 'status-indicator status-green' : 'status-indicator status-red';
+            }
+        }
+
+        function check_services() {
+            // Haproxy
+            XHR.get('<%=api.url("haproxy_status")%>', null, function (x, data) {
+                update_status_indicator('status_haproxy', data && data.status);
+            });
+
+            // Passwall Global
+            XHR.get('<%=api.url("index_status")%>', null, function (x, data) {
+                update_status_indicator('status_passwall', data && data.global_status);
+            });
+        }
+
+        function check_connect() {
+            var targets = [
+                { name: 'google', url: 'https://www.google.com' },
+                { name: 'github', url: 'https://github.com' },
+                { name: 'baidu', url: 'https://www.baidu.com' }
+            ];
+
+            var btn = document.getElementById('btn_ping');
+            btn.disabled = true;
+            btn.value = '<%:Testing...%>';
+
+            var completed = 0;
+
+            targets.forEach(function (target) {
+                document.getElementById('ping_' + target.name + '_status').innerHTML = '<span class="spinning"><%:Checking...%></span>';
+
+                XHR.get('<%=api.url("connect_status")%>', { url: target.url }, function (x, data) {
+                    var statusCell = document.getElementById('ping_' + target.name + '_status');
+                    var timeCell = document.getElementById('ping_' + target.name + '_time');
+
+                    if (data.use_time) {
+                        statusCell.innerHTML = '<span style="color:green"><%:OK%></span>';
+                        timeCell.innerHTML = data.use_time + ' ms';
+                    } else {
+                        statusCell.innerHTML = '<span style="color:red"><%:Failed%></span>';
+                        timeCell.innerHTML = '-';
+                    }
+
+                    completed++;
+                    if (completed >= targets.length) {
+                        btn.disabled = false;
+                        btn.value = '<%:Ping Test%>';
+                    }
+                });
+            });
+        }
+
+        window.onload = function () {
+            check_services();
+        }
+        //]]>
+    </script>
+
+    <div class="cbi-section">
+        <h3>
+            <%:System Diagnostics%>
+        </h3>
+
+        <div class="diag-card">
+            <h4>
+                <%:Service Status%>
+            </h4>
+            <ul style="list-style: none; padding: 0;">
+                <li style="margin-bottom: 5px;"><span id="status_passwall" class="status-indicator status-gray"></span>
+                    PassWall (Global)</li>
+                <li style="margin-bottom: 5px;"><span id="status_haproxy" class="status-indicator status-gray"></span>
+                    HAProxy</li>
+            </ul>
+            <input class="cbi-button cbi-button-apply" type="button" value="<%:Refresh Status%>"
+                onclick="check_services()" />
+        </div>
+
+        <div class="diag-card">
+            <h4>
+                <%:Connectivity Check%>
+            </h4>
+            <input id="btn_ping" class="cbi-button cbi-button-apply" type="button" value="<%:Ping Test%>"
+                onclick="check_connect()" />
+            <table class="cbi-section-table" style="margin-top: 10px; width: 100%;">
+                <tr>
+                    <th style="text-align:left">Target</th>
+                    <th style="text-align:left">Status</th>
+                    <th style="text-align:left">Latency</th>
+                </tr>
+                <tr>
+                    <td>Google</td>
+                    <td id="ping_google_status">-</td>
+                    <td id="ping_google_time">-</td>
+                </tr>
+                <tr>
+                    <td>GitHub</td>
+                    <td id="ping_github_status">-</td>
+                    <td id="ping_github_time">-</td>
+                </tr>
+                <tr>
+                    <td>Baidu</td>
+                    <td id="ping_baidu_status">-</td>
+                    <td id="ping_baidu_time">-</td>
+                </tr>
+            </table>
+        </div>
+    </div>

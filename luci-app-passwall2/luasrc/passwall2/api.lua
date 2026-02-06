@@ -22,10 +22,9 @@ TMP_IFACE_PATH = TMP_PATH .. "/iface"
 
 NEW_PORT = nil
 
-local lang = uci:get("luci", "main", "lang") or "auto"
-if lang == "auto" then
-	local auto_lang = uci:get(appname, "@global[0]", "auto_lang")
-	if auto_lang then lang = auto_lang end
+local lang = uci:get(appname, "@global[0]", "language")
+if not lang or lang == "auto" then
+	lang = uci:get("luci", "main", "lang") or "auto"
 end
 if lang == "auto" then
 	lang = i18n.default

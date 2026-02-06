@@ -1,6 +1,3 @@
--- Copyright (C) 2022-2025 xiaorouji
--- Copyright (C) 2026 Openwrt-Passwall Organization
-
 module("luci.controller.passwall2", package.seeall)
 local api = require "luci.passwall2.api"
 local appname = api.appname		-- not available
@@ -35,26 +32,44 @@ function index()
 	e.acl_depends = { "luci-app-passwall2" }
 	--[[ Client ]]
 	entry({"admin", "services", appname, "settings"}, cbi(appname .. "/client/global"), _("Basic Settings"), 1).dependent = true
-	entry({"admin", "services", appname, "node_list"}, cbi(appname .. "/client/node_list"), _("Node List"), 2).dependent = true
-	entry({"admin", "services", appname, "node_subscribe"}, cbi(appname .. "/client/node_subscribe"), _("Node Subscribe"), 3).dependent = true
-	entry({"admin", "services", appname, "other"}, cbi(appname .. "/client/other", {autoapply = true}), _("Other Settings"), 92).leaf = true
-	if nixio.fs.access("/usr/sbin/haproxy") then
-		entry({"admin", "services", appname, "haproxy"}, cbi(appname .. "/client/haproxy"), _("Load Balancing"), 93).leaf = true
-	end
-	entry({"admin", "services", appname, "app_update"}, cbi(appname .. "/client/app_update"), _("App Update"), 95).leaf = true
-	entry({"admin", "services", appname, "rule"}, cbi(appname .. "/client/rule"), _("Rule Manage"), 96).leaf = true
-	entry({"admin", "services", appname, "geoview"}, form(appname .. "/client/geoview"), _("Geo View"), 97).leaf = true
+	-- Nodes
+	entry({"admin", "services", appname, "nodes"}, cbi(appname .. "/client/nodes"), _("Nodes"), 2).dependent = true
+	entry({"admin", "services", appname, "nodes", "list"}, cbi(appname .. "/client/node_list"), _("Node List"), 1).leaf = true
+	entry({"admin", "services", appname, "nodes", "subscribe"}, cbi(appname .. "/client/node_subscribe"), _("Node Subscribe"), 2).leaf = true
+	
 	entry({"admin", "services", appname, "node_subscribe_config"}, cbi(appname .. "/client/node_subscribe_config")).leaf = true
 	entry({"admin", "services", appname, "node_config"}, cbi(appname .. "/client/node_config")).leaf = true
 	entry({"admin", "services", appname, "shunt_rules"}, cbi(appname .. "/client/shunt_rules")).leaf = true
 	entry({"admin", "services", appname, "socks_config"}, cbi(appname .. "/client/socks_config")).leaf = true
-	entry({"admin", "services", appname, "acl"}, cbi(appname .. "/client/acl"), _("Access control"), 98).leaf = true
 	entry({"admin", "services", appname, "acl_config"}, cbi(appname .. "/client/acl_config")).leaf = true
-	entry({"admin", "services", appname, "log"}, form(appname .. "/client/log"), _("Watch Logs"), 999).leaf = true
 
-	--[[ Server ]]
-	entry({"admin", "services", appname, "server"}, cbi(appname .. "/server/index"), _("Server-Side"), 99).leaf = true
+	-- Rule Manage
+	entry({"admin", "services", appname, "rule"}, cbi(appname .. "/client/rule"), _("Rule Manage"), 3).leaf = true
+
+	-- Advanced Connection
+	entry({"admin", "services", appname, "other"}, cbi(appname .. "/client/other", {autoapply = true}), _("Advanced Connection"), 4).leaf = true
+
+	-- Tools
+	entry({"admin", "services", appname, "tools"}, cbi(appname .. "/client/tools"), _("Tools"), 5).dependent = true
+	entry({"admin", "services", appname, "tools", "acl"}, cbi(appname .. "/client/acl"), _("Access control"), 1).leaf = true
+	entry({"admin", "services", appname, "tools", "geoview"}, form(appname .. "/client/geoview"), _("Geo View"), 2).leaf = true
+	if nixio.fs.access("/usr/sbin/haproxy") then
+		entry({"admin", "services", appname, "tools", "haproxy"}, cbi(appname .. "/client/haproxy"), _("Load Balancing"), 3).leaf = true
+	end
+
+	-- Server-Side
+	entry({"admin", "services", appname, "server"}, cbi(appname .. "/server/index"), _("Server-Side"), 6).leaf = true
 	entry({"admin", "services", appname, "server_user"}, cbi(appname .. "/server/user")).leaf = true
+
+	-- Maintenance
+	entry({"admin", "services", appname, "maintenance"}, form(appname .. "/client/maintenance"), _("Maintenance"), 7).dependent = true
+	entry({"admin", "services", appname, "maintenance", "panel_settings"}, cbi(appname .. "/client/panel_settings"), _("Panel Settings"), 1).leaf = true
+	entry({"admin", "services", appname, "maintenance", "log"}, form(appname .. "/client/maintenance/log"), _("Watch Logs"), 2).leaf = true
+	entry({"admin", "services", appname, "maintenance", "update"}, cbi(appname .. "/client/maintenance/app_update"), _("Update Center"), 3).leaf = true
+	entry({"admin", "services", appname, "maintenance", "diagnostics"}, cbi(appname .. "/client/maintenance/diagnostics"), _("Diagnostics"), 4).leaf = true
+	entry({"admin", "services", appname, "maintenance", "backup"}, cbi(appname .. "/client/maintenance/backup"), _("Backup & Restore"), 5).leaf = true
+	entry({"admin", "services", appname, "maintenance", "cache"}, cbi(appname .. "/client/maintenance/cache"), _("Cache & Cleanup"), 6).leaf = true
+	entry({"admin", "services", appname, "maintenance", "scheduled_tasks"}, cbi(appname .. "/client/maintenance/scheduled_tasks"), _("Scheduled Tasks"), 7).leaf = true
 
 	--[[ API ]]
 	entry({"admin", "services", appname, "server_user_status"}, call("server_user_status")).leaf = true
@@ -70,6 +85,7 @@ function index()
 	entry({"admin", "services", appname, "get_socks_log"}, call("get_socks_log")).leaf = true
 	entry({"admin", "services", appname, "get_log"}, call("get_log")).leaf = true
 	entry({"admin", "services", appname, "clear_log"}, call("clear_log")).leaf = true
+	entry({"admin", "services", appname, "get_diagnostic_log"}, call("get_diagnostic_log")).leaf = true
 	entry({"admin", "services", appname, "index_status"}, call("index_status")).leaf = true
 	entry({"admin", "services", appname, "haproxy_status"}, call("haproxy_status")).leaf = true
 	entry({"admin", "services", appname, "socks_status"}, call("socks_status")).leaf = true
@@ -93,6 +109,10 @@ function index()
 	entry({"admin", "services", appname, "subscribe_manual"}, call("subscribe_manual")).leaf = true
 	entry({"admin", "services", appname, "subscribe_manual_all"}, call("subscribe_manual_all")).leaf = true
 	entry({"admin", "services", appname, "flush_set"}, call("flush_set")).leaf = true
+	entry({"admin", "services", appname, "backup_config"}, call("backup_config")).leaf = true
+	entry({"admin", "services", appname, "restore_config"}, call("restore_config")).leaf = true
+	entry({"admin", "services", appname, "clear_dns_cache"}, call("clear_dns_cache")).leaf = true
+	entry({"admin", "services", appname, "restart_service"}, call("restart_service")).leaf = true
 
 	--[[Components update]]
 	entry({"admin", "services", appname, "check_passwall2"}, call("app_check")).leaf = true
@@ -259,12 +279,67 @@ function get_socks_log()
 end
 
 function get_log()
-	-- luci.sys.exec("[ -f /tmp/log/passwall2.log ] && sed '1!G;h;$!d' /tmp/log/passwall2.log > /tmp/log/passwall2_show.log")
-	http.write(luci.sys.exec("[ -f '/tmp/log/passwall2.log' ] && cat /tmp/log/passwall2.log"))
+	local flag = http.formvalue("flag")
+	local log_path = "/tmp/log/passwall2.log"
+	if flag == "access" then
+		log_path = "/tmp/log/passwall2_access.log"
+	end
+	if nixio.fs.access(log_path) then
+		http.write(luci.sys.exec("cat " .. log_path))
+	else
+		http.write("")
+	end
 end
 
 function clear_log()
 	luci.sys.call("echo '' > /tmp/log/passwall2.log")
+end
+
+function get_diagnostic_log()
+	local log_type = http.formvalue("log_type")
+	local log_file = ""
+	local log_name = ""
+	
+	-- Map log types to file paths
+	if log_type == "xray" then
+		log_file = "/tmp/log/xray.log"
+		log_name = "Xray Log"
+	elseif log_type == "singbox" then
+		log_file = "/tmp/log/sing-box.log"
+		log_name = "Sing-Box Log"
+	elseif log_type == "dns" then
+		log_file = "/tmp/log/dns.log"
+		log_name = "DNS Log"
+	elseif log_type == "network" then
+		log_file = "/tmp/log/network.log"
+		log_name = "Network Log"
+	elseif log_type == "firewall" then
+		log_file = "/tmp/log/firewall.log"
+		log_name = "Firewall Log"
+	elseif log_type == "system" then
+		log_file = "/tmp/log/system.log"
+		log_name = "System Log"
+	else
+		http_write_json_error("Invalid log type")
+		return
+	end
+	
+	-- Check if log file exists and read last 1000 lines
+	if nixio.fs.access(log_file) then
+		local content = luci.sys.exec("tail -n 1000 '" .. log_file .. "'")
+		content = content:gsub("\n", "<br />")
+		http_write_json_ok({
+			name = log_name,
+			content = content,
+			exists = true
+		})
+	else
+		http_write_json_ok({
+			name = log_name,
+			content = "Log file not found or empty.",
+			exists = false
+		})
+	end
 end
 
 function index_status()
@@ -906,4 +981,31 @@ function flush_set()
 	if redirect == "1" then
 		http.redirect(api.url("log"))
 	end
+end
+
+function backup_config()
+	local config_path = "/etc/config/passwall2"
+	local reader = ltn12.source.file(io.open(config_path, "r"))
+	http.header('Content-Disposition', 'attachment; filename="passwall2_backup.config"')
+	http.prepare_content("application/octet-stream")
+	ltn12.pump.all(reader, http.write)
+end
+
+function restore_config()
+	-- Legacy placeholder or custom upload handler if needed.
+	-- Actual restore handled by CBI model upload for simplicity.
+	http.redirect(api.url("maintenance", "backup"))
+end
+
+function clear_dns_cache()
+	-- Flush DNS cache logic (e.g. reload dnsmasq or flush ipset)
+	-- Passwall usually handles this on restart/reload, but we can try specific commands.
+	-- For now, allow simple restart of DNS helper or full reload.
+	luci.sys.call("/etc/init.d/dnsmasq restart")
+	http_write_json({ code = 1, msg = "DNS Cache Cleared" })
+end
+
+function restart_service()
+	luci.sys.call("/etc/init.d/passwall2 restart")
+	http_write_json({ code = 1, msg = "Service Restarted" })
 end

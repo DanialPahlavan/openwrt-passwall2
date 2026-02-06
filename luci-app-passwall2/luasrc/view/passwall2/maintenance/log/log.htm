@@ -1,0 +1,177 @@
+<% local api=require "luci.passwall2.api" -%>
+	<script type="text/javascript">
+		//<![CDATA[
+		var log_textarea = null;
+		var current_log_type = "";
+		var timer = null;
+		var is_diagnostic_mode = false;
+
+		function scrollToBottom() {
+			if (log_textarea) {
+				log_textarea.scrollTop = log_textarea.scrollHeight;
+			}
+		}
+
+		function clearlog() {
+			XHR.get('<%=api.url("clear_log")%>', null,
+				function (x, data) {
+					if (x && x.status == 200 && log_textarea) {
+						log_textarea.innerHTML = "";
+					}
+				}
+			);
+		}
+
+		function fetch_log() {
+			var auto_refresh = document.getElementById('auto_refresh');
+			if (!auto_refresh || !auto_refresh.checked || is_diagnostic_mode) return;
+
+			XHR.get('<%=api.url("get_log")%>', { flag: current_log_type },
+				function (x, data) {
+					if (x && x.status == 200) {
+						if (!log_textarea) log_textarea = document.getElementById('log_textarea');
+						var wasBottom = (log_textarea.scrollTop + log_textarea.clientHeight >= log_textarea.scrollHeight - 20);
+						log_textarea.innerHTML = x.responseText || "No log content.";
+						if (wasBottom) {
+							scrollToBottom();
+						}
+					}
+				}
+			);
+		}
+
+		function switch_log(type, btn) {
+			is_diagnostic_mode = false;
+			current_log_type = type;
+
+			// Reset buttons
+			var tabs = document.getElementsByClassName('log-tab');
+			for (var i = 0; i < tabs.length; i++) {
+				tabs[i].className = 'cbi-button cbi-button-reset log-tab';
+			}
+			btn.className = 'cbi-button cbi-button-save log-tab';
+
+			// Show diagnostic buttons
+			var diagnostic_buttons = document.getElementById('diagnostic_buttons');
+			if (diagnostic_buttons) diagnostic_buttons.style.display = 'none';
+
+			// Immediate fetch
+			XHR.get('<%=api.url("get_log")%>', { flag: current_log_type },
+				function (x, data) {
+					if (x && x.status == 200) {
+						log_textarea.innerHTML = x.responseText || "No log content.";
+						scrollToBottom();
+					}
+				}
+			);
+		}
+
+		function show_diagnostic_log(log_type, btn) {
+			is_diagnostic_mode = true;
+			current_log_type = log_type;
+
+			// Reset buttons
+			var diagnostic_tabs = document.getElementsByClassName('diagnostic-tab');
+			for (var i = 0; i < diagnostic_tabs.length; i++) {
+				diagnostic_tabs[i].className = 'cbi-button cbi-button-reset diagnostic-tab';
+			}
+			btn.className = 'cbi-button cbi-button-save diagnostic-tab';
+
+			// Hide regular log buttons
+			var tabs = document.getElementsByClassName('log-tab');
+			for (var i = 0; i < tabs.length; i++) {
+				tabs[i].className = 'cbi-button cbi-button-reset log-tab';
+			}
+
+			// Show diagnostic buttons
+			var diagnostic_buttons = document.getElementById('diagnostic_buttons');
+			if (diagnostic_buttons) diagnostic_buttons.style.display = 'block';
+
+			// Fetch diagnostic log (last 1000 lines, no auto-refresh)
+			XHR.get('<%=api.url("get_diagnostic_log")%>', { log_type: log_type },
+				function (x, data) {
+					if (x && x.status == 200) {
+						var response = JSON.parse(x.responseText);
+						if (response.code == 1 && response.data) {
+							log_textarea.innerHTML = response.data.content;
+							scrollToBottom();
+						} else {
+							log_textarea.innerHTML = "Error loading diagnostic log.";
+						}
+					} else {
+						log_textarea.innerHTML = "Error loading diagnostic log.";
+					}
+				}
+			);
+		}
+
+		window.onload = function () {
+			log_textarea = document.getElementById('log_textarea');
+			timer = setInterval(fetch_log, 5000);
+			switch_log('', document.getElementById('tab_main')); // Load main log by default
+		}
+		//]]>
+	</script>
+
+	<style>
+		.log-tab {
+			margin-right: 5px;
+		}
+
+		.diagnostic-tab {
+			margin-right: 5px;
+			background-color: #f8f9fa;
+			border: 1px solid #dee2e6;
+		}
+
+		.diagnostic-tab:hover {
+			background-color: #e9ecef;
+		}
+
+		.diagnostic-tab.cbi-button-save {
+			background-color: #007bff;
+			color: white;
+			border-color: #007bff;
+		}
+
+		.diagnostic-tab.cbi-button-save:hover {
+			background-color: #0056b3;
+		}
+	</style>
+
+	<fieldset class="cbi-section" id="_log_fieldset">
+		<div style="margin-bottom: 10px;">
+			<input id="tab_main" class="cbi-button cbi-button-save log-tab" type="button" onclick="switch_log('', this)"
+				value="PassWall Log" />
+			<input id="tab_access" class="cbi-button cbi-button-reset log-tab" type="button"
+				onclick="switch_log('access', this)" value="Access Log" />
+			<div style="float: right; margin-top: 5px;">
+				<input type="checkbox" id="auto_refresh" checked="checked" /> <label for="auto_refresh">
+					<%:Auto Refresh%>
+				</label>
+				&nbsp;&nbsp;
+				<input class="btn cbi-button cbi-button-remove" type="button" onclick="clearlog()"
+					value="<%:Clear logs%>" />
+			</div>
+		</div>
+
+		<!-- Diagnostic Log Buttons -->
+		<div id="diagnostic_buttons" style="margin-bottom: 10px; display: none;">
+			<span style="font-weight: bold; margin-right: 10px;">Diagnostic Logs:</span>
+			<input class="cbi-button cbi-button-reset diagnostic-tab" type="button"
+				onclick="show_diagnostic_log('xray', this)" value="Xray Log" />
+			<input class="cbi-button cbi-button-reset diagnostic-tab" type="button"
+				onclick="show_diagnostic_log('singbox', this)" value="Sing-Box Log" />
+			<input class="cbi-button cbi-button-reset diagnostic-tab" type="button"
+				onclick="show_diagnostic_log('dns', this)" value="DNS Log" />
+			<input class="cbi-button cbi-button-reset diagnostic-tab" type="button"
+				onclick="show_diagnostic_log('network', this)" value="Network Log" />
+			<input class="cbi-button cbi-button-reset diagnostic-tab" type="button"
+				onclick="show_diagnostic_log('firewall', this)" value="Firewall Log" />
+			<input class="cbi-button cbi-button-reset diagnostic-tab" type="button"
+				onclick="show_diagnostic_log('system', this)" value="System Log" />
+		</div>
+
+		<textarea id="log_textarea" class="cbi-input-textarea" style="width: 100%;" data-update="change" rows="30"
+			wrap="off" readonly="readonly"></textarea>
+	</fieldset>
