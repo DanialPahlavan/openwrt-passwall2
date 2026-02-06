@@ -35,28 +35,36 @@ function index()
 	e.acl_depends = { "luci-app-passwall2" }
 	--[[ Client ]]
 	entry({"admin", "services", appname, "settings"}, cbi(appname .. "/client/global"), _("Basic Settings"), 1).dependent = true
-	entry({"admin", "services", appname, "node_list"}, cbi(appname .. "/client/node_list"), _("Node List"), 2).dependent = true
-	entry({"admin", "services", appname, "node_subscribe"}, cbi(appname .. "/client/node_subscribe"), _("Node Subscribe"), 3).dependent = true
-	entry({"admin", "services", appname, "other"}, cbi(appname .. "/client/other", {autoapply = true}), _("Other Settings"), 92).leaf = true
-	if nixio.fs.access("/usr/sbin/haproxy") then
-		entry({"admin", "services", appname, "haproxy"}, cbi(appname .. "/client/haproxy"), _("Load Balancing"), 93).leaf = true
-	end
-	entry({"admin", "services", appname, "app_update"}, cbi(appname .. "/client/app_update"), _("App Update"), 95).leaf = true
-	entry({"admin", "services", appname, "rule"}, cbi(appname .. "/client/rule"), _("Rule Manage"), 96).leaf = true
-	entry({"admin", "services", appname, "geoview"}, form(appname .. "/client/geoview"), _("Geo View"), 97).leaf = true
+	-- Nodes
+	entry({"admin", "services", appname, "nodes"}, alias("admin", "services", appname, "nodes", "list"), _("Nodes"), 2).dependent = true
+	entry({"admin", "services", appname, "nodes", "list"}, cbi(appname .. "/client/node_list"), _("Node List"), 1).leaf = true
+	entry({"admin", "services", appname, "nodes", "subscribe"}, cbi(appname .. "/client/node_subscribe"), _("Node Subscribe"), 2).leaf = true
+	
 	entry({"admin", "services", appname, "node_subscribe_config"}, cbi(appname .. "/client/node_subscribe_config")).leaf = true
 	entry({"admin", "services", appname, "node_config"}, cbi(appname .. "/client/node_config")).leaf = true
 	entry({"admin", "services", appname, "shunt_rules"}, cbi(appname .. "/client/shunt_rules")).leaf = true
 	entry({"admin", "services", appname, "socks_config"}, cbi(appname .. "/client/socks_config")).leaf = true
-	entry({"admin", "services", appname, "acl"}, cbi(appname .. "/client/acl"), _("Access control"), 98).leaf = true
 	entry({"admin", "services", appname, "acl_config"}, cbi(appname .. "/client/acl_config")).leaf = true
+
+	-- Tools
+	entry({"admin", "services", appname, "tools"}, alias("admin", "services", appname, "tools", "acl"), _("Tools"), 90).dependent = true
+	entry({"admin", "services", appname, "tools", "acl"}, cbi(appname .. "/client/acl"), _("Access control"), 1).leaf = true
+	entry({"admin", "services", appname, "tools", "geoview"}, form(appname .. "/client/geoview"), _("Geo View"), 2).leaf = true
+	if nixio.fs.access("/usr/sbin/haproxy") then
+		entry({"admin", "services", appname, "tools", "haproxy"}, cbi(appname .. "/client/haproxy"), _("Load Balancing"), 3).leaf = true
+	end
+	
+	entry({"admin", "services", appname, "other"}, cbi(appname .. "/client/other", {autoapply = true}), _("Advanced Connection"), 92).leaf = true
+	entry({"admin", "services", appname, "rule"}, cbi(appname .. "/client/rule"), _("Rule Manage"), 96).leaf = true
 	
 	-- Maintenance
-	entry({"admin", "services", appname, "maintenance"}, alias("admin", "services", appname, "maintenance", "log"), _("Maintenance"), 99).dependent = true
+	entry({"admin", "services", appname, "maintenance"}, alias("admin", "services", appname, "maintenance", "log"), _("Maintenance"), 100).dependent = true
 	entry({"admin", "services", appname, "maintenance", "log"}, form(appname .. "/client/maintenance/log"), _("Watch Logs"), 1).leaf = true
-	entry({"admin", "services", appname, "maintenance", "diagnostics"}, cbi(appname .. "/client/maintenance/diagnostics"), _("Diagnostics"), 2).leaf = true
-	entry({"admin", "services", appname, "maintenance", "backup"}, cbi(appname .. "/client/maintenance/backup"), _("Backup & Restore"), 3).leaf = true
-	entry({"admin", "services", appname, "maintenance", "cache"}, cbi(appname .. "/client/maintenance/cache"), _("Cache & Cleanup"), 4).leaf = true
+	entry({"admin", "services", appname, "maintenance", "update"}, cbi(appname .. "/client/maintenance/app_update"), _("Update Center"), 2).leaf = true
+	entry({"admin", "services", appname, "maintenance", "diagnostics"}, cbi(appname .. "/client/maintenance/diagnostics"), _("Diagnostics"), 3).leaf = true
+	entry({"admin", "services", appname, "maintenance", "backup"}, cbi(appname .. "/client/maintenance/backup"), _("Backup & Restore"), 4).leaf = true
+	entry({"admin", "services", appname, "maintenance", "cache"}, cbi(appname .. "/client/maintenance/cache"), _("Cache & Cleanup"), 5).leaf = true
+	entry({"admin", "services", appname, "maintenance", "scheduled_tasks"}, cbi(appname .. "/client/maintenance/scheduled_tasks"), _("Scheduled Tasks"), 6).leaf = true
 
 	--[[ Server ]]
 	entry({"admin", "services", appname, "server"}, cbi(appname .. "/server/index"), _("Server-Side"), 99).leaf = true

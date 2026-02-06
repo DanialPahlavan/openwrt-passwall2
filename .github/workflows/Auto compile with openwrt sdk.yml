@@ -104,7 +104,7 @@ jobs:
           echo "## :mega:Update content" >> release.txt
           if [ "${{ steps.check_version.outputs.release_type }}" == "beta" ]; then
             echo "> [!WARNING]" >> release.txt
-            echo "> **This is a BETA release** - Use for testing only, not recommended for production." >> release.txt
+            echo "> **This is a BETA release** - Use for testing only, not recommended for daily usage." >> release.txt
             echo "" >> release.txt
           fi
           echo "![](https://img.shields.io/github/downloads/${{ env.passwall2 }}/${{steps.check_version.outputs.latest_version}}/total?style=flat-square)" >> release.txt
