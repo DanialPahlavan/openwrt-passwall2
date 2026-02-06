@@ -1,0 +1,94 @@
+<% local api=require "luci.passwall2.api" -%>
+	<script type="text/javascript">
+		//<![CDATA[
+		var log_textarea = null;
+		var current_log_type = "";
+		var timer = null;
+
+		function scrollToBottom() {
+			if (log_textarea) {
+				log_textarea.scrollTop = log_textarea.scrollHeight;
+			}
+		}
+
+		function clearlog() {
+			XHR.get('<%=api.url("clear_log")%>', null,
+				function (x, data) {
+					if (x && x.status == 200 && log_textarea) {
+						log_textarea.innerHTML = "";
+					}
+				}
+			);
+		}
+
+		function fetch_log() {
+			var auto_refresh = document.getElementById('auto_refresh');
+			if (!auto_refresh || !auto_refresh.checked) return;
+
+			XHR.get('<%=api.url("get_log")%>', { flag: current_log_type },
+				function (x, data) {
+					if (x && x.status == 200) {
+						if (!log_textarea) log_textarea = document.getElementById('log_textarea');
+						var wasBottom = (log_textarea.scrollTop + log_textarea.clientHeight >= log_textarea.scrollHeight - 20);
+						log_textarea.innerHTML = x.responseText || "No log content.";
+						if (wasBottom) {
+							scrollToBottom();
+						}
+					}
+				}
+			);
+		}
+
+		function switch_log(type, btn) {
+			current_log_type = type;
+
+			// Reset buttons
+			var tabs = document.getElementsByClassName('log-tab');
+			for (var i = 0; i < tabs.length; i++) {
+				tabs[i].className = 'cbi-button cbi-button-reset log-tab';
+			}
+			btn.className = 'cbi-button cbi-button-save log-tab';
+
+			// Immediate fetch
+			XHR.get('<%=api.url("get_log")%>', { flag: current_log_type },
+				function (x, data) {
+					if (x && x.status == 200) {
+						log_textarea.innerHTML = x.responseText || "No log content.";
+						scrollToBottom();
+					}
+				}
+			);
+		}
+
+		window.onload = function () {
+			log_textarea = document.getElementById('log_textarea');
+			timer = setInterval(fetch_log, 5000);
+			switch_log('', document.getElementById('tab_main')); // Load main log by default
+		}
+		//]]>
+	</script>
+
+	<style>
+		.log-tab {
+			margin-right: 5px;
+		}
+	</style>
+
+	<fieldset class="cbi-section" id="_log_fieldset">
+		<div style="margin-bottom: 10px;">
+			<input id="tab_main" class="cbi-button cbi-button-save log-tab" type="button" onclick="switch_log('', this)"
+				value="PassWall Log" />
+			<input id="tab_access" class="cbi-button cbi-button-reset log-tab" type="button"
+				onclick="switch_log('access', this)" value="Access Log" />
+			<div style="float: right; margin-top: 5px;">
+				<input type="checkbox" id="auto_refresh" checked="checked" /> <label for="auto_refresh">
+					<%:Auto Refresh%>
+				</label>
+				&nbsp;&nbsp;
+				<input class="btn cbi-button cbi-button-remove" type="button" onclick="clearlog()"
+					value="<%:Clear logs%>" />
+			</div>
+		</div>
+		<textarea id="log_textarea" class="cbi-input-textarea" style="width: 100%;" data-update="change" rows="30"
+			wrap="off" readonly="readonly"></textarea>
+	</fieldset>

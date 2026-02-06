@@ -50,7 +50,13 @@ function index()
 	entry({"admin", "services", appname, "socks_config"}, cbi(appname .. "/client/socks_config")).leaf = true
 	entry({"admin", "services", appname, "acl"}, cbi(appname .. "/client/acl"), _("Access control"), 98).leaf = true
 	entry({"admin", "services", appname, "acl_config"}, cbi(appname .. "/client/acl_config")).leaf = true
-	entry({"admin", "services", appname, "log"}, form(appname .. "/client/log"), _("Watch Logs"), 999).leaf = true
+	
+	-- Maintenance
+	entry({"admin", "services", appname, "maintenance"}, alias("admin", "services", appname, "maintenance", "log"), _("Maintenance"), 99).dependent = true
+	entry({"admin", "services", appname, "maintenance", "log"}, form(appname .. "/client/maintenance/log"), _("Watch Logs"), 1).leaf = true
+	entry({"admin", "services", appname, "maintenance", "diagnostics"}, cbi(appname .. "/client/maintenance/diagnostics"), _("Diagnostics"), 2).leaf = true
+	entry({"admin", "services", appname, "maintenance", "backup"}, cbi(appname .. "/client/maintenance/backup"), _("Backup & Restore"), 3).leaf = true
+	entry({"admin", "services", appname, "maintenance", "cache"}, cbi(appname .. "/client/maintenance/cache"), _("Cache & Cleanup"), 4).leaf = true
 
 	--[[ Server ]]
 	entry({"admin", "services", appname, "server"}, cbi(appname .. "/server/index"), _("Server-Side"), 99).leaf = true
@@ -93,6 +99,10 @@ function index()
 	entry({"admin", "services", appname, "subscribe_manual"}, call("subscribe_manual")).leaf = true
 	entry({"admin", "services", appname, "subscribe_manual_all"}, call("subscribe_manual_all")).leaf = true
 	entry({"admin", "services", appname, "flush_set"}, call("flush_set")).leaf = true
+	entry({"admin", "services", appname, "backup_config"}, call("backup_config")).leaf = true
+	entry({"admin", "services", appname, "restore_config"}, call("restore_config")).leaf = true
+	entry({"admin", "services", appname, "clear_dns_cache"}, call("clear_dns_cache")).leaf = true
+	entry({"admin", "services", appname, "restart_service"}, call("restart_service")).leaf = true
 
 	--[[Components update]]
 	entry({"admin", "services", appname, "check_passwall2"}, call("app_check")).leaf = true
@@ -259,8 +269,16 @@ function get_socks_log()
 end
 
 function get_log()
-	-- luci.sys.exec("[ -f /tmp/log/passwall2.log ] && sed '1!G;h;$!d' /tmp/log/passwall2.log > /tmp/log/passwall2_show.log")
-	http.write(luci.sys.exec("[ -f '/tmp/log/passwall2.log' ] && cat /tmp/log/passwall2.log"))
+	local flag = http.formvalue("flag")
+	local log_path = "/tmp/log/passwall2.log"
+	if flag == "access" then
+		log_path = "/tmp/log/passwall2_access.log"
+	end
+	if nixio.fs.access(log_path) then
+		http.write(luci.sys.exec("cat " .. log_path))
+	else
+		http.write("")
+	end
 end
 
 function clear_log()
@@ -906,4 +924,31 @@ function flush_set()
 	if redirect == "1" then
 		http.redirect(api.url("log"))
 	end
+end
+
+function backup_config()
+	local config_path = "/etc/config/passwall2"
+	local reader = ltn12.source.file(io.open(config_path, "r"))
+	http.header('Content-Disposition', 'attachment; filename="passwall2_backup.config"')
+	http.prepare_content("application/octet-stream")
+	ltn12.pump.all(reader, http.write)
+end
+
+function restore_config()
+	-- Legacy placeholder or custom upload handler if needed.
+	-- Actual restore handled by CBI model upload for simplicity.
+	http.redirect(api.url("maintenance", "backup"))
+end
+
+function clear_dns_cache()
+	-- Flush DNS cache logic (e.g. reload dnsmasq or flush ipset)
+	-- Passwall usually handles this on restart/reload, but we can try specific commands.
+	-- For now, allow simple restart of DNS helper or full reload.
+	luci.sys.call("/etc/init.d/dnsmasq restart")
+	http_write_json({ code = 1, msg = "DNS Cache Cleared" })
+end
+
+function restart_service()
+	luci.sys.call("/etc/init.d/passwall2 restart")
+	http_write_json({ code = 1, msg = "Service Restarted" })
 end
