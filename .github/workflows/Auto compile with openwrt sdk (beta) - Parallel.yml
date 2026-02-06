@@ -1,8 +1,8 @@
 #
 # Copyright (c) 2022-2023 SMALLPROGRAM <https://github.com/smallprogram>
-# Description: Auto compile (Optimized for Beta)
+# Description: Auto compile (Optimized for Beta with Parallel Jobs)
 #
-name: "Auto compile with openwrt sdk (Beta - Optimized)"
+name: "Auto compile with openwrt sdk (Beta - Parallel Optimized)"
 on:
   repository_dispatch:
   workflow_dispatch:
@@ -123,17 +123,16 @@ jobs:
           body_path: release.txt
 
 
-  job_build_passwall2:
-    name: Build passwall2 [${{ matrix.ver }}] (Optimized)
+  # Parallel Job 1: Environment Setup
+  job_setup_environment:
+    name: Setup Environment (Parallel)
     needs: job_check
     if: needs.job_check.outputs.has_update == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - ver: "ipk"
-          - ver: "apk"
+        variant: [ipk, apk]
     steps:
       - name: Install packages
         run: |
@@ -270,6 +269,42 @@ jobs:
           echo "Patch application completed"
           #--------------------------------------end_patches--------------------------------------------
 
+      - name: Cache SDK for next build
+        if: always()
+        uses: actions/cache@v4
+        with:
+          path: |
+            sdk_cache
+            sdk
+          key: sdk-${{ hashFiles('luci-app-passwall2/Makefile') }}
+          restore-keys: |
+            sdk-
+
+      - name: Upload environment artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: environment-setup-${{ matrix.variant }}
+          path: sdk/
+          retention-days: 1
+
+
+  # Parallel Job 2: Core Compilation
+  job_compile_core:
+    name: Compile Core (Parallel)
+    needs: [job_check, job_setup_environment]
+    if: needs.job_check.outputs.has_update == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [ipk, apk]
+    steps:
+      - name: Download environment artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: environment-setup-${{ matrix.variant }}
+          path: sdk/
+
       - name: Compile passwall2 (Optimized)
         id: compile
         run: |
@@ -337,25 +372,121 @@ jobs:
           echo "status=success" >> $GITHUB_OUTPUT
           echo "FIRMWARE=$PWD" >> $GITHUB_ENV
 
-      - name: Cache SDK for next build
-        if: steps.compile.outputs.status == 'success'
-        uses: actions/cache@v4
+      - name: Upload core compilation artifacts
+        uses: actions/upload-artifact@v4
         with:
-          path: |
-            sdk_cache
-            sdk
-          key: sdk-${{ hashFiles('luci-app-passwall2/Makefile') }}
-          restore-keys: |
-            sdk-
+          name: core-compilation-${{ matrix.variant }}
+          path: upload/
+          retention-days: 1
+
+
+  # Parallel Job 3: Dependency Compilation
+  job_compile_dependencies:
+    name: Compile Dependencies (Parallel)
+    needs: [job_check, job_setup_environment]
+    if: needs.job_check.outputs.has_update == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [ipk, apk]
+    steps:
+      - name: Download environment artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: environment-setup-${{ matrix.variant }}
+          path: sdk/
+
+      - name: Compile dependencies (Optimized)
+        id: compile_deps
+        run: |
+          cd sdk
+          for package in ${{ env.package_names }}; do
+              if [ -d "feeds/passwall_packages/$package" ]; then
+                  echo "-----------begin compile $package ---------------"
+                  sleep 10s
+                  make package/$package/compile -j$(nproc) V=s || make package/$package/compile -j1 V=s
+                  echo "-----------compiled $package ---------------"
+                  echo ""
+              fi
+          done
+
+          echo "status=success" >> $GITHUB_OUTPUT
+
+      - name: Organize dependency artifacts
+        id: organize_deps
+        if: steps.compile_deps.outputs.status == 'success'
+        run: |
+          cd sdk
+
+          mkdir tmp_upload
+          shopt -s nullglob 
+          for src_dir in bin/packages/*/{packages,passwall_packages}; do
+              [[ -d "$src_dir" ]] || continue
+
+              echo "Scanning: $src_dir"
+
+              for prefix in ${{ env.package_release }}; do
+                  for file in "$src_dir"/"$prefix"*; do
+                      [[ -f "$file" ]] || continue
+
+                      filename=$(basename "$file")
+                      echo "  Found: $filename"
+                      cp -r "$file" "tmp_upload/"
+                  done
+              done
+          done
+
+          mkdir upload
+          zip -jr upload/passwall_packages_${{ matrix.variant }}.zip tmp_upload/*
+
+          echo "status=success" >> $GITHUB_OUTPUT
+
+      - name: Upload dependency artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-compilation-${{ matrix.variant }}
+          path: sdk/upload/
+          retention-days: 1
+
+
+  # Parallel Job 4: Post-processing and Release
+  job_post_process:
+    name: Post-process & Release (Parallel)
+    needs: [job_check, job_compile_core, job_compile_dependencies]
+    if: needs.job_check.outputs.has_update == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [ipk, apk]
+    steps:
+      - name: Download core compilation artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: core-compilation-${{ matrix.variant }}
+          path: core_upload/
+
+      - name: Download dependency artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dependency-compilation-${{ matrix.variant }}
+          path: dep_upload/
+
+      - name: Combine and organize final artifacts
+        run: |
+          mkdir final_upload
+          cp -r core_upload/* final_upload/
+          cp -r dep_upload/* final_upload/
 
       - name: Upload passwall2 ipks to release
         uses: softprops/action-gh-release@v2
-        if: steps.compile.outputs.status == 'success'
+        if: always()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{needs.job_check.outputs.passwall2_version}}
-          files: ${{ env.FIRMWARE }}/*
+          files: final_upload/*
 
 
   job_auto_compile:
