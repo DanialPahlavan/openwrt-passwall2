@@ -37,4 +37,48 @@ o.write = function()
 	luci.http.redirect(api.url("maintenance", "cache"))
 end
 
+
+-- System Maintenance
+s = m:section(TypedSection, "global", translate("System Maintenance"))
+s.anonymous = true
+s.addremove = false
+
+-- Clear DNS Cache
+o = s:option(Button, "clear_dns_cache", translate("Clear DNS Cache"))
+o.inputstyle = "apply"
+o.description = translate("Clear the DNS cache to resolve domain name issues.")
+o.write = function()
+	sys.call("/etc/init.d/dnsmasq restart >/dev/null 2>&1 &")
+	luci.http.redirect(api.url("maintenance", "backup"))
+end
+
+-- Restart Service
+o = s:option(Button, "restart_service", translate("Restart Service"))
+o.inputstyle = "reset"
+o.description = translate("Restart the PassWall2 service to apply changes.")
+o.write = function()
+	sys.call("/etc/init.d/passwall2 restart >/dev/null 2>&1 &")
+	luci.http.redirect(api.url("maintenance", "backup"))
+end
+
+-- Clear Logs
+o = s:option(Button, "clear_logs", translate("Clear Logs"))
+o.inputstyle = "reset"
+o.description = translate("Clear all PassWall2 logs to free up space.")
+o.write = function()
+	sys.call("echo '' > /tmp/log/passwall2.log")
+	sys.call("echo '' > /tmp/log/passwall2_access.log")
+	luci.http.redirect(api.url("maintenance", "backup"))
+end
+
+-- Flush Rules
+o = s:option(Button, "flush_rules", translate("Flush Rules"))
+o.inputstyle = "reset"
+o.description = translate("Flush all firewall and routing rules.")
+o.write = function()
+	api.sh_uci_set(appname, "@global[0]", "flush_set", "1", true)
+	sys.call("/etc/init.d/passwall2 restart >/dev/null 2>&1 &")
+	luci.http.redirect(api.url("maintenance", "backup"))
+end
+
 return m
