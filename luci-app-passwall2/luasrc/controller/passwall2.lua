@@ -45,6 +45,7 @@ function index()
 
 	-- Rule Manage
 	entry({"admin", "services", appname, "rule"}, cbi(appname .. "/client/rule"), _("Rule Manage"), 3).leaf = true
+	entry({"admin", "services", appname, "shunt_rules_assign"}, cbi(appname .. "/client/shunt_rules_assign"), _("Shunt Rules"), 4).leaf = true
 
 	-- Advanced Connection
 	entry({"admin", "services", appname, "other"}, cbi(appname .. "/client/other", {autoapply = true}), _("Advanced Connection"), 4).leaf = true
@@ -125,6 +126,7 @@ function index()
 
 	--[[Backup]]
 	entry({"admin", "services", appname, "create_backup"}, call("create_backup")).leaf = true
+	entry({"admin", "services", appname, "create_advanced_backup"}, call("create_advanced_backup")).leaf = true
 	entry({"admin", "services", appname, "restore_backup"}, call("restore_backup")).leaf = true
 
 	--[[geoview]]
@@ -345,6 +347,10 @@ end
 function index_status()
 	local e = {}
 	e["global_status"] = luci.sys.call("/bin/busybox top -bn1 | grep -v 'grep' | grep '/tmp/etc/passwall2/bin/' | grep 'default' | grep 'global' >/dev/null") == 0
+	e["socks_status"] = luci.sys.call("/bin/busybox top -bn1 | grep -v 'grep' | grep '/tmp/etc/passwall2/bin/' | grep 'SOCKS_' >/dev/null") == 0
+	e["haproxy_status"] = luci.sys.call("/bin/busybox top -bn1 | grep -v 'grep' | grep '/tmp/etc/passwall2/bin/' | grep 'haproxy' >/dev/null") == 0
+	e["dns_status"] = luci.sys.call("/bin/busybox top -bn1 | grep -v 'grep' | grep '/tmp/etc/passwall2/bin/' | grep 'dns' >/dev/null") == 0
+	e["tun2socks_status"] = luci.sys.call("/bin/busybox top -bn1 | grep -v 'grep' | grep '/tmp/etc/passwall2/bin/' | grep 'tun2socks' >/dev/null") == 0
 	http_write_json(e)
 end
 
@@ -1008,4 +1014,41 @@ end
 function restart_service()
 	luci.sys.call("/etc/init.d/passwall2 restart")
 	http_write_json({ code = 1, msg = "Service Restarted" })
+end
+
+function create_advanced_backup()
+	local date = os.date("%y%m%d%H%M")
+	local tar_file = "/tmp/passwall2-" .. date .. "-advanced-backup.tar.gz"
+	fs.remove(tar_file)
+	
+	-- Create comprehensive backup including logs, cache, and system state
+	local backup_files = {
+		"/etc/config/passwall2",
+		"/etc/config/passwall2_server",
+		"/usr/share/passwall2/domains_excluded",
+		"/tmp/log/passwall2.log",
+		"/tmp/log/passwall2_access.log",
+		"/tmp/log/passwall2_server.log",
+		"/tmp/etc/passwall2",
+		"/tmp/etc/passwall2_server"
+	}
+	
+	-- Filter out files that don't exist
+	local existing_files = {}
+	for _, file in ipairs(backup_files) do
+		if fs.access(file) then
+			table.insert(existing_files, file)
+		end
+	end
+	
+	if #existing_files > 0 then
+		local cmd = "tar -czf " .. tar_file .. " " .. table.concat(existing_files, " ")
+		api.sys.call(cmd)
+	end
+	
+	http.header("Content-Disposition", "attachment; filename=passwall2-" .. date .. "-advanced-backup.tar.gz")
+	http.header("X-Backup-Filename", "passwall2-" .. date .. "-advanced-backup.tar.gz")
+	http.prepare_content("application/octet-stream")
+	http.write(fs.readfile(tar_file))
+	fs.remove(tar_file)
 end

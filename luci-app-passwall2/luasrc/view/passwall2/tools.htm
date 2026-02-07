@@ -1,1 +1,10 @@
-<%+passwall2 /global/footer%>
+<%+passwall2 /global/status%>
+    <script type="text/javascript">
+        //<![CDATA[
+        document.addEventListener("DOMContentLoaded", function () {
+            // Redirect to the first child tab (Access control) when clicking on Tools parent tab
+            window.location.href = '<%=api.url("tools", "acl")%>';
+        });
+        //]]>
+    </script>
+    <%+passwall2 /global/footer%>

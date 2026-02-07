@@ -105,6 +105,24 @@
 			);
 		}
 
+		function export_log() {
+			var log_content = log_textarea.value;
+			if (log_content.trim() === "") {
+				alert("No log content to export.");
+				return;
+			}
+
+			var blob = new Blob([log_content], { type: 'text/plain' });
+			var url = URL.createObjectURL(blob);
+			var a = document.createElement('a');
+			a.href = url;
+			a.download = 'passwall2_log_' + new Date().toISOString().replace(/[:.]/g, '-') + '.log';
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+		}
+
 		window.onload = function () {
 			log_textarea = document.getElementById('log_textarea');
 			timer = setInterval(fetch_log, 5000);
@@ -137,39 +155,79 @@
 		.diagnostic-tab.cbi-button-save:hover {
 			background-color: #0056b3;
 		}
+
+		.log-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 10px;
+		}
+
+		.log-controls {
+			display: flex;
+			gap: 10px;
+			align-items: center;
+		}
+
+		.diagnostic-section {
+			margin-bottom: 10px;
+			padding: 10px;
+			border: 1px solid #dee2e6;
+			border-radius: 4px;
+			background-color: #f8f9fa;
+		}
+
+		.diagnostic-title {
+			font-weight: bold;
+			margin-bottom: 5px;
+			color: #495057;
+		}
+
+		.diagnostic-buttons {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 5px;
+		}
 	</style>
 
 	<fieldset class="cbi-section" id="_log_fieldset">
-		<div style="margin-bottom: 10px;">
-			<input id="tab_main" class="cbi-button cbi-button-save log-tab" type="button" onclick="switch_log('', this)"
-				value="PassWall Log" />
-			<input id="tab_access" class="cbi-button cbi-button-reset log-tab" type="button"
-				onclick="switch_log('access', this)" value="Access Log" />
-			<div style="float: right; margin-top: 5px;">
+		<div class="log-header">
+			<div>
+				<input id="tab_main" class="cbi-button cbi-button-save log-tab" type="button"
+					onclick="switch_log('', this)" value="PassWall Log" />
+				<input id="tab_access" class="cbi-button cbi-button-reset log-tab" type="button"
+					onclick="switch_log('access', this)" value="Access Log" />
+			</div>
+			<div class="log-controls">
 				<input type="checkbox" id="auto_refresh" checked="checked" /> <label for="auto_refresh">
 					<%:Auto Refresh%>
 				</label>
 				&nbsp;&nbsp;
 				<input class="btn cbi-button cbi-button-remove" type="button" onclick="clearlog()"
 					value="<%:Clear logs%>" />
+				&nbsp;&nbsp;
+				<input class="btn cbi-button cbi-button-action" type="button" onclick="export_log()"
+					value="<%:Export Log%>" />
 			</div>
 		</div>
 
-		<!-- Diagnostic Log Buttons -->
-		<div id="diagnostic_buttons" style="margin-bottom: 10px; display: none;">
-			<span style="font-weight: bold; margin-right: 10px;">Diagnostic Logs:</span>
-			<input class="cbi-button cbi-button-reset diagnostic-tab" type="button"
-				onclick="show_diagnostic_log('xray', this)" value="Xray Log" />
-			<input class="cbi-button cbi-button-reset diagnostic-tab" type="button"
-				onclick="show_diagnostic_log('singbox', this)" value="Sing-Box Log" />
-			<input class="cbi-button cbi-button-reset diagnostic-tab" type="button"
-				onclick="show_diagnostic_log('dns', this)" value="DNS Log" />
-			<input class="cbi-button cbi-button-reset diagnostic-tab" type="button"
-				onclick="show_diagnostic_log('network', this)" value="Network Log" />
-			<input class="cbi-button cbi-button-reset diagnostic-tab" type="button"
-				onclick="show_diagnostic_log('firewall', this)" value="Firewall Log" />
-			<input class="cbi-button cbi-button-reset diagnostic-tab" type="button"
-				onclick="show_diagnostic_log('system', this)" value="System Log" />
+		<!-- Diagnostic Log Section -->
+		<div class="diagnostic-section">
+			<div class="diagnostic-title">Diagnostic Logs:</div>
+			<div class="diagnostic-buttons">
+				<input class="cbi-button cbi-button-reset diagnostic-tab" type="button"
+					onclick="show_diagnostic_log('xray', this)" value="Xray Log" />
+				<input class="cbi-button cbi-button-reset diagnostic-tab" type="button"
+					onclick="show_diagnostic_log('singbox', this)" value="Sing-Box Log" />
+				<input class="cbi-button cbi-button-reset diagnostic-tab" type="button"
+					onclick="show_diagnostic_log('dns', this)" value="DNS Log" />
+				<input class="cbi-button cbi-button-reset diagnostic-tab" type="button"
+					onclick="show_diagnostic_log('network', this)" value="Network Log" />
+				<input class="cbi-button cbi-button-reset diagnostic-tab" type="button"
+					onclick="show_diagnostic_log('firewall', this)" value="Firewall Log" />
+				<input class="cbi-button cbi-button-reset diagnostic-tab" type="button"
+					onclick="show_diagnostic_log('system', this)" value="System Log" />
+			</div>
 		</div>
 
 		<textarea id="log_textarea" class="cbi-input-textarea" style="width: 100%;" data-update="change" rows="30"

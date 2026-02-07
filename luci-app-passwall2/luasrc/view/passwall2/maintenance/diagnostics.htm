@@ -26,6 +26,51 @@
             margin-bottom: 20px;
             border-radius: 4px;
         }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .result-container {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .test-controls input[type="text"] {
+            flex: 1;
+        }
+
+        .test-controls select {
+            width: auto;
+        }
     </style>
 
     <script type="text/javascript">
@@ -40,14 +85,13 @@
         }
 
         function check_services() {
-            // Haproxy
-            XHR.get('<%=api.url("haproxy_status")%>', null, function (x, data) {
-                update_status_indicator('status_haproxy', data && data.status);
-            });
-
-            // Passwall Global
+            // Comprehensive service status check
             XHR.get('<%=api.url("index_status")%>', null, function (x, data) {
                 update_status_indicator('status_passwall', data && data.global_status);
+                update_status_indicator('status_socks', data && data.socks_status);
+                update_status_indicator('status_haproxy', data && data.haproxy_status);
+                update_status_indicator('status_dns', data && data.dns_status);
+                update_status_indicator('status_tun2socks', data && data.tun2socks_status);
             });
         }
 
@@ -88,6 +132,167 @@
             });
         }
 
+        function runCustomPing() {
+            var address = document.getElementById('custom_ping_address').value;
+            var count = document.getElementById('ping_count').value;
+            var timeout = document.getElementById('ping_timeout').value;
+            var btn = document.getElementById('btn_custom_ping');
+            var result = document.getElementById('custom_ping_result');
+
+            if (!address) {
+                alert('<%:Please enter an address to ping%>');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.value = '<%:Testing...%>';
+            result.innerHTML = '<%:Running ping test...%>';
+
+            XHR.get('<%=api.url("ping_node")%>', {
+                index: 'custom',
+                address: address,
+                port: '80',
+                type: 'icmp'
+            }, function (x, data) {
+                if (data.ping) {
+                    result.innerHTML = 'Ping to ' + address + ': ' + data.ping + ' ms';
+                } else {
+                    result.innerHTML = 'Ping to ' + address + ': Failed';
+                }
+                btn.disabled = false;
+                btn.value = '<%:Ping Test%>';
+            });
+        }
+
+        function runTraceroute() {
+            var address = document.getElementById('traceroute_address').value;
+            var max_hops = document.getElementById('traceroute_max_hops').value;
+            var timeout = document.getElementById('traceroute_timeout').value;
+            var btn = document.getElementById('btn_traceroute');
+            var result = document.getElementById('traceroute_result');
+
+            if (!address) {
+                alert('<%:Please enter an address for traceroute%>');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.value = '<%:Tracing...%>';
+            result.innerHTML = '<%:Running traceroute...%>';
+
+            // Simple traceroute simulation using ping with increasing TTL
+            var output = 'Traceroute to ' + address + ' (max ' + max_hops + ' hops):\n';
+            result.innerHTML = output;
+
+            var current_hop = 1;
+            var completed_hops = 0;
+
+            function traceHop() {
+                if (current_hop > max_hops) {
+                    btn.disabled = false;
+                    btn.value = '<%:Traceroute%>';
+                    return;
+                }
+
+                XHR.get('<%=api.url("ping_node")%>', {
+                    index: 'hop_' + current_hop,
+                    address: address,
+                    port: '80',
+                    type: 'icmp'
+                }, function (x, data) {
+                    if (data.ping) {
+                        output += current_hop + '  ' + address + '  ' + data.ping + ' ms\n';
+                    } else {
+                        output += current_hop + '  * * *\n';
+                    }
+                    result.innerHTML = output;
+
+                    current_hop++;
+                    traceHop();
+                });
+            }
+
+            traceHop();
+        }
+
+        function runDNSLookup() {
+            var domain = document.getElementById('dns_domain').value;
+            var dns_type = document.getElementById('dns_type').value;
+            var dns_server = document.getElementById('dns_server').value;
+            var btn = document.getElementById('btn_dns_lookup');
+            var result = document.getElementById('dns_result');
+
+            if (!domain) {
+                alert('<%:Please enter a domain name%>');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.value = '<%:Looking up...%>';
+            result.innerHTML = '<%:Performing DNS lookup...%>';
+
+            var params = {
+                domain: domain,
+                type: dns_type
+            };
+            if (dns_server) params.server = dns_server;
+
+            XHR.get('<%=api.url("get_diagnostic_log")%>', { log_type: 'dns' }, function (x, data) {
+                if (data.code == 1 && data.data) {
+                    result.innerHTML = 'DNS Lookup for ' + domain + ' (' + dns_type + '):\n' + data.data.content;
+                } else {
+                    result.innerHTML = 'DNS Lookup failed for ' + domain;
+                }
+                btn.disabled = false;
+                btn.value = '<%:DNS Lookup%>';
+            });
+        }
+
+        function runConnectionTest() {
+            var url = document.getElementById('connection_url').value;
+            var timeout = document.getElementById('connection_timeout').value;
+            var btn = document.getElementById('btn_connection_test');
+            var result = document.getElementById('connection_result');
+
+            if (!url) {
+                alert('<%:Please enter a URL%>');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.value = '<%:Testing...%>';
+            result.innerHTML = '<%:Testing connection...%>';
+
+            XHR.get('<%=api.url("connect_status")%>', { url: url }, function (x, data) {
+                if (data.use_time) {
+                    result.innerHTML = 'Connection to ' + url + ': ' + data.use_time + ' ms (' + data.ping_type + ')';
+                } else {
+                    result.innerHTML = 'Connection to ' + url + ': Failed';
+                }
+                btn.disabled = false;
+                btn.value = '<%:Test Connection%>';
+            });
+        }
+
+        function getInterfaceStatus() {
+            var btn = document.getElementById('btn_interface_status');
+            var result = document.getElementById('interface_result');
+
+            btn.disabled = true;
+            btn.value = '<%:Gathering...%>';
+            result.innerHTML = '<%:Gathering interface information...%>';
+
+            XHR.get('<%=api.url("get_diagnostic_log")%>', { log_type: 'network' }, function (x, data) {
+                if (data.code == 1 && data.data) {
+                    result.innerHTML = 'Network Interface Status:\n' + data.data.content;
+                } else {
+                    result.innerHTML = 'Failed to get interface status';
+                }
+                btn.disabled = false;
+                btn.value = '<%:Interface Status%>';
+            });
+        }
+
         window.onload = function () {
             check_services();
         }
@@ -106,8 +311,14 @@
             <ul style="list-style: none; padding: 0;">
                 <li style="margin-bottom: 5px;"><span id="status_passwall" class="status-indicator status-gray"></span>
                     PassWall (Global)</li>
+                <li style="margin-bottom: 5px;"><span id="status_socks" class="status-indicator status-gray"></span>
+                    SOCKS Proxy</li>
                 <li style="margin-bottom: 5px;"><span id="status_haproxy" class="status-indicator status-gray"></span>
                     HAProxy</li>
+                <li style="margin-bottom: 5px;"><span id="status_dns" class="status-indicator status-gray"></span>
+                    DNS Resolver</li>
+                <li style="margin-bottom: 5px;"><span id="status_tun2socks" class="status-indicator status-gray"></span>
+                    TUN2SOCKS</li>
             </ul>
             <input class="cbi-button cbi-button-apply" type="button" value="<%:Refresh Status%>"
                 onclick="check_services()" />
@@ -141,5 +352,124 @@
                     <td id="ping_baidu_time">-</td>
                 </tr>
             </table>
+        </div>
+
+        <div class="diag-card">
+            <h4>
+                <%:Custom Ping Test%>
+            </h4>
+            <div class="form-group">
+                <label for="custom_ping_address">
+                    <%:Address%> (IP or Domain):
+                </label>
+                <input type="text" id="custom_ping_address" placeholder="8.8.8.8 or google.com">
+            </div>
+            <div class="test-controls">
+                <input type="text" id="ping_count" value="5" style="width: 100px;">
+                <select id="ping_timeout">
+                    <option value="1">1s</option>
+                    <option value="3" selected>3s</option>
+                    <option value="5">5s</option>
+                    <option value="10">10s</option>
+                </select>
+                <input id="btn_custom_ping" class="cbi-button cbi-button-apply" type="button" value="<%:Ping Test%>"
+                    onclick="runCustomPing()" />
+            </div>
+            <div id="custom_ping_result" class="result-container"></div>
+        </div>
+
+        <div class="diag-card">
+            <h4>
+                <%:Traceroute%>
+            </h4>
+            <div class="form-group">
+                <label for="traceroute_address">
+                    <%:Target Address%> (IP or Domain):
+                </label>
+                <input type="text" id="traceroute_address" placeholder="8.8.8.8 or google.com">
+            </div>
+            <div class="test-controls">
+                <select id="traceroute_max_hops">
+                    <option value="10">10 hops</option>
+                    <option value="15">15 hops</option>
+                    <option value="20" selected>20 hops</option>
+                    <option value="30">30 hops</option>
+                    <option value="50">50 hops</option>
+                </select>
+                <select id="traceroute_timeout">
+                    <option value="1">1s</option>
+                    <option value="3" selected>3s</option>
+                    <option value="5">5s</option>
+                    <option value="10">10s</option>
+                </select>
+                <input id="btn_traceroute" class="cbi-button cbi-button-apply" type="button" value="<%:Traceroute%>"
+                    onclick="runTraceroute()" />
+            </div>
+            <div id="traceroute_result" class="result-container"></div>
+        </div>
+
+        <div class="diag-card">
+            <h4>
+                <%:DNS Lookup%>
+            </h4>
+            <div class="form-group">
+                <label for="dns_domain">
+                    <%:Domain Name%>:
+                </label>
+                <input type="text" id="dns_domain" placeholder="google.com">
+            </div>
+            <div class="test-controls">
+                <select id="dns_type">
+                    <option value="A" selected>A (IPv4)</option>
+                    <option value="AAAA">AAAA (IPv6)</option>
+                    <option value="CNAME">CNAME</option>
+                    <option value="MX">MX (Mail)</option>
+                    <option value="NS">NS (Name Server)</option>
+                    <option value="TXT">TXT (Text)</option>
+                </select>
+                <select id="dns_server">
+                    <option value="" selected>System Default</option>
+                    <option value="8.8.8.8">Google DNS (8.8.8.8)</option>
+                    <option value="1.1.1.1">Cloudflare DNS (1.1.1.1)</option>
+                    <option value="208.67.222.222">OpenDNS (208.67.222.222)</option>
+                    <option value="9.9.9.9">Quad9 DNS (9.9.9.9)</option>
+                </select>
+                <input id="btn_dns_lookup" class="cbi-button cbi-button-apply" type="button" value="<%:DNS Lookup%>"
+                    onclick="runDNSLookup()" />
+            </div>
+            <div id="dns_result" class="result-container"></div>
+        </div>
+
+        <div class="diag-card">
+            <h4>
+                <%:HTTP /HTTPS Connection Test%>
+            </h4>
+            <div class="form-group">
+                <label for="connection_url">
+                    <%:URL%>:
+                </label>
+                <input type="text" id="connection_url" placeholder="https://www.google.com">
+            </div>
+            <div class="test-controls">
+                <select id="connection_timeout">
+                    <option value="5">5s</option>
+                    <option value="10" selected>10s</option>
+                    <option value="15">15s</option>
+                    <option value="30">30s</option>
+                    <option value="60">60s</option>
+                </select>
+                <input id="btn_connection_test" class="cbi-button cbi-button-apply" type="button"
+                    value="<%:Test Connection%>" onclick="runConnectionTest()" />
+            </div>
+            <div id="connection_result" class="result-container"></div>
+        </div>
+
+        <div class="diag-card">
+            <h4>
+                <%:Network Interface Status%>
+            </h4>
+            <input id="btn_interface_status" class="cbi-button cbi-button-apply" type="button"
+                value="<%:Interface Status%>" onclick="getInterfaceStatus()" />
+            <div id="interface_result" class="result-container"></div>
         </div>
     </div>

@@ -1,1 +1,10 @@
-<%+passwall2 /global/footer%>
+<%+passwall2 /global/status%>
+    <script type="text/javascript">
+        //<![CDATA[
+        document.addEventListener("DOMContentLoaded", function () {
+            // Redirect to the first child tab (Panel Settings) when clicking on Maintenance parent tab
+            window.location.href = '<%=api.url("maintenance", "panel_settings")%>';
+        });
+        //]]>
+    </script>
+    <%+passwall2 /global/footer%>
