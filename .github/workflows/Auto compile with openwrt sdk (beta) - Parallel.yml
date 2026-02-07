@@ -309,7 +309,7 @@ jobs:
         id: compile
         run: |
           cd sdk
-          ver=${{ matrix.ver }}
+          ver=${{ matrix.variant }}
           if [ $ver == "ipk" ]; then
             config_apk_line=$(grep -n "USE_APK" Config-build.in | awk -F ':' '{print $1}')
             [ -n "$config_apk_line" ] && sed -n $(expr ${config_apk_line} + 2)p Config-build.in | grep "default y" >/dev/null ; [ $? == 0 ] && sed -i "$(expr ${config_apk_line} + 2)s/y/n/" Config-build.in
@@ -677,13 +677,13 @@ jobs:
           cd sdk
 
       - name: SSH connection to Actions
-        uses: mxschmitt/action-tmate@v3
+        uses: mxschmitt/action-tmate@v3.13
         if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
 
       - name: ${{ matrix.platform }} feeds configuration packages
         run: |
           cd sdk
-          ver=${{ matrix.ver }}
+          ver=${{ matrix.variant }}
           if [ $ver == "ipk" ]; then
             config_apk_line=$(grep -n "USE_APK" Config-build.in | awk -F ':' '{print $1}')
             [ -n "$config_apk_line" ] && sed -n $(expr ${config_apk_line} + 2)p Config-build.in | grep "default y" >/dev/null ; [ $? == 0 ] && sed -i "$(expr ${config_apk_line} + 2)s/y/n/" Config-build.in
@@ -818,7 +818,7 @@ jobs:
           done
 
           mkdir upload
-          zip -jr upload/passwall_packages_${{ matrix.ver }}_${{ matrix.platform }}.zip tmp_upload/*
+          zip -jr upload/passwall_packages_${{ matrix.variant }}_${{ matrix.platform }}.zip tmp_upload/*
 
           echo "FIRMWARE=$PWD" >> $GITHUB_ENV
           echo "status=success" >> $GITHUB_OUTPUT
