@@ -821,17 +821,17 @@ function flush_set()
 end
 
 -- Helper functions for JSON responses
-local function http_write_json(content)
+function http_write_json(content)
     http.prepare_content("application/json")
     http.write(luci.jsonc.stringify(content or {code = 1}))
 end
 
-local function http_write_json_ok(data)
+function http_write_json_ok(data)
     http.prepare_content("application/json")
     http.write(luci.jsonc.stringify({code = 1, data = data}))
 end
 
-local function http_write_json_error(data)
+function http_write_json_error(data)
     http.prepare_content("application/json")
     http.write(luci.jsonc.stringify({code = 0, data = data}))
 end
@@ -865,5 +865,9 @@ return {
     subscribe_del_all = subscribe_del_all,
     subscribe_manual = subscribe_manual,
     subscribe_manual_all = subscribe_manual_all,
-    flush_set = flush_set
+    flush_set = flush_set,
+    -- JSON helper functions for legacy controller
+    http_write_json = http_write_json,
+    http_write_json_ok = http_write_json_ok,
+    http_write_json_error = http_write_json_error
 }
