@@ -198,21 +198,34 @@ jobs:
           cp -r temp_resp/lang/golang feeds/packages/lang
 
           #--------------------------------------Get latest Golang version------------------------------------------
+          echo "Attempting to update Golang version..."
           wget https://go.dev/dl/?mode=json -O /tmp/golang.json
           go_latest_version=$(cat /tmp/golang.json | jq -r '.[0].version')
           GO_VERSION_MAJOR_MINOR=$(echo $go_latest_version | sed 's#go##' | awk -F '.' '{print $1 "." $2}')
           GO_VERSION_PATCH=$(echo $go_latest_version | sed 's#go##' | awk -F '.' '{print $3}')
           go_latest_version_hash=$(cat /tmp/golang.json | jq -r '.[0].files[0].sha256')
           
-          # Find the correct golang directory
-          GOLANG_DIR=$(find feeds/packages/lang/golang -type d -name "golang*" | head -1)
-          if [ -z "$GOLANG_DIR" ]; then
-            echo "Error: Could not find golang directory"
-            exit 1
-          fi
-          echo "Found golang directory: $GOLANG_DIR"
+          # Find the correct golang directory with Makefile
+          GOLANG_DIR=""
+          for dir in $(find feeds/packages/lang/golang -type d -name "golang*" | sort); do
+            if [ -f "$dir/Makefile" ]; then
+              GOLANG_DIR="$dir"
+              break
+            fi
+          done
           
-          sed -i -e "s/^GO_VERSION_MAJOR_MINOR:=.*/GO_VERSION_MAJOR_MINOR:=${GO_VERSION_MAJOR_MINOR}/" -e "s/^GO_VERSION_PATCH:=.*/GO_VERSION_PATCH:=${GO_VERSION_PATCH}/" -e "s/^PKG_HASH:=.*/PKG_HASH:=${go_latest_version_hash}/" "$GOLANG_DIR/Makefile"
+          if [ -z "$GOLANG_DIR" ]; then
+            echo "Warning: Could not find golang directory with Makefile, skipping Golang update"
+            echo "Available directories:"
+            find feeds/packages/lang/golang -type d | head -10
+          else
+            echo "Found golang directory with Makefile: $GOLANG_DIR"
+            if sed -i -e "s/^GO_VERSION_MAJOR_MINOR:=.*/GO_VERSION_MAJOR_MINOR:=${GO_VERSION_MAJOR_MINOR}/" -e "s/^GO_VERSION_PATCH:=.*/GO_VERSION_PATCH:=${GO_VERSION_PATCH}/" -e "s/^PKG_HASH:=.*/PKG_HASH:=${go_latest_version_hash}/" "$GOLANG_DIR/Makefile"; then
+              echo "Successfully updated Golang version in $GOLANG_DIR/Makefile"
+            else
+              echo "Warning: Failed to update Golang version, but continuing..."
+            fi
+          fi
 
           #--------------------------------------Update Rust------------------------------------------
           echo "update rust version"
@@ -498,22 +511,34 @@ jobs:
           cp -r temp_resp/lang/golang feeds/packages/lang
 
           #--------------------------------------Get latest Golang version------------------------------------------
+          echo "Attempting to update Golang version..."
           wget https://go.dev/dl/?mode=json -O /tmp/golang.json
           go_latest_version=$(cat /tmp/golang.json | jq -r '.[0].version')
           GO_VERSION_MAJOR_MINOR=$(echo $go_latest_version | sed 's#go##' | awk -F '.' '{print $1 "." $2}')
           GO_VERSION_PATCH=$(echo $go_latest_version | sed 's#go##' | awk -F '.' '{print $3}')
           go_latest_version_hash=$(cat /tmp/golang.json | jq -r '.[0].files[0].sha256')
           
-          # Find the correct golang directory
-          GOLANG_DIR=$(find feeds/packages/lang/golang -type d -name "golang*" | head -1)
-          if [ -z "$GOLANG_DIR" ]; then
-            echo "Error: Could not find golang directory"
-            exit 1
-          fi
-          echo "Found golang directory: $GOLANG_DIR"
+          # Find the correct golang directory with Makefile
+          GOLANG_DIR=""
+          for dir in $(find feeds/packages/lang/golang -type d -name "golang*" | sort); do
+            if [ -f "$dir/Makefile" ]; then
+              GOLANG_DIR="$dir"
+              break
+            fi
+          done
           
-          sed -i -e "s/^GO_VERSION_MAJOR_MINOR:=.*/GO_VERSION_MAJOR_MINOR:=${GO_VERSION_MAJOR_MINOR}/" -e "s/^GO_VERSION_PATCH:=.*/GO_VERSION_PATCH:=${GO_VERSION_PATCH}/" -e "s/^PKG_HASH:=.*/PKG_HASH:=${go_latest_version_hash}/" "$GOLANG_DIR/Makefile"
-          cat "$GOLANG_DIR/Makefile"
+          if [ -z "$GOLANG_DIR" ]; then
+            echo "Warning: Could not find golang directory with Makefile, skipping Golang update"
+            echo "Available directories:"
+            find feeds/packages/lang/golang -type d | head -10
+          else
+            echo "Found golang directory with Makefile: $GOLANG_DIR"
+            if sed -i -e "s/^GO_VERSION_MAJOR_MINOR:=.*/GO_VERSION_MAJOR_MINOR:=${GO_VERSION_MAJOR_MINOR}/" -e "s/^GO_VERSION_PATCH:=.*/GO_VERSION_PATCH:=${GO_VERSION_PATCH}/" -e "s/^PKG_HASH:=.*/PKG_HASH:=${go_latest_version_hash}/" "$GOLANG_DIR/Makefile"; then
+              echo "Successfully updated Golang version in $GOLANG_DIR/Makefile"
+            else
+              echo "Warning: Failed to update Golang version, but continuing..."
+            fi
+          fi
 
           #--------------------------------------Update Rust------------------------------------------
           echo "update rust version"
