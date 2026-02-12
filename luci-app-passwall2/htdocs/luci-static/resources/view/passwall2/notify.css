@@ -1,0 +1,112 @@
+/* PassWall2 Toast Notifications CSS */
+/* Pure CSS, GPU-accelerated animations, lightweight (<2KB) */
+
+.pw2-toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.pw2-toast {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 250px;
+    max-width: 400px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    background: white;
+    color: #333;
+    opacity: 0;
+    transform: translateX(400px);
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    pointer-events: auto;
+}
+
+.pw2-toast-show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.pw2-toast-hide {
+    opacity: 0;
+    transform: translateX(400px);
+}
+
+.pw2-toast-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.pw2-toast-text {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.4;
+    word-wrap: break-word;
+}
+
+/* Toast types */
+.pw2-toast-success {
+    border-left: 4px solid #2dce89;
+}
+
+.pw2-toast-success .pw2-toast-icon {
+    color: #2dce89;
+}
+
+.pw2-toast-error {
+    border-left: 4px solid #f5365c;
+}
+
+.pw2-toast-error .pw2-toast-icon {
+    color: #f5365c;
+}
+
+.pw2-toast-warning {
+    border-left: 4px solid #fb6340;
+}
+
+.pw2-toast-warning .pw2-toast-icon {
+    color: #fb6340;
+}
+
+.pw2-toast-info {
+    border-left: 4px solid #11cdef;
+}
+
+.pw2-toast-info .pw2-toast-icon {
+    color: #11cdef;
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+    .pw2-toast {
+        background: #1a1d21;
+        color: #e0e0e0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .pw2-toast-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+    }
+    
+    .pw2-toast {
+        min-width: auto;
+        max-width: none;
+    }
+}

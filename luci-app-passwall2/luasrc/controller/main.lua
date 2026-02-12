@@ -57,8 +57,11 @@ function M.index()
     entry({ "admin", "services", appname, "server" }, cbi(appname .. "/server/index"), _("Server-Side"), 6).leaf = true
     entry({ "admin", "services", appname, "server_user" }, cbi(appname .. "/server/user")).leaf = true
 
+    -- Statistics
+    entry({ "admin", "services", appname, "statistics" }, cbi(appname .. "/client/statistics"), _("Statistics"), 7).dependent = true
+
     -- Maintenance
-    entry({ "admin", "services", appname, "maintenance" }, form(appname .. "/client/maintenance"), _("Maintenance"), 7).dependent = true
+    entry({ "admin", "services", appname, "maintenance" }, form(appname .. "/client/maintenance"), _("Maintenance"), 8).dependent = true
     entry({ "admin", "services", appname, "maintenance", "panel_settings" }, cbi(appname .. "/client/panel_settings"), _("Panel Settings"), 1).leaf = true
     entry({ "admin", "services", appname, "maintenance", "log" }, form(appname .. "/client/maintenance/log"), _("Watch Logs"), 2).leaf = true
     entry({ "admin", "services", appname, "maintenance", "update" }, cbi(appname .. "/client/maintenance/app_update"), _("Update Center"), 3).leaf = true
@@ -66,6 +69,58 @@ function M.index()
     entry({ "admin", "services", appname, "maintenance", "backup" }, cbi(appname .. "/client/maintenance/backup"), _("Backup & Restore"), 5).leaf = true
     entry({ "admin", "services", appname, "maintenance", "cache" }, cbi(appname .. "/client/maintenance/cache"), _("System Maintenance"), 6).leaf = true
     entry({ "admin", "services", appname, "maintenance", "scheduled_tasks" }, cbi(appname .. "/client/maintenance/scheduled_tasks"), _("Scheduled Tasks"), 7).leaf = true
+
+    -- Statistics API endpoints
+    local stats_controller = require "luci.controller.passwall2.stats"
+    entry({ "admin", "services", appname, "get_stats" }, call("get_stats")).leaf = true
+    entry({ "admin", "services", appname, "get_resources" }, call("get_resources")).leaf = true
+    entry({ "admin", "services", appname, "run_diagnostic" }, call("run_diagnostic")).leaf = true
+    entry({ "admin", "services", appname, "get_tasks" }, call("get_tasks")).leaf = true
+    entry({ "admin", "services", appname, "create_backup" }, call("create_backup")).leaf = true
+    entry({ "admin", "services", appname, "list_backups" }, call("list_backups")).leaf = true
+    entry({ "admin", "services", appname, "start_monitor" }, call("start_monitor")).leaf = true
+    entry({ "admin", "services", appname, "stop_monitor" }, call("stop_monitor")).leaf = true
+end
+
+-- Forward statistics API calls to stats controller
+function get_stats()
+    local stats_controller = require "luci.controller.passwall2.stats"
+    return stats_controller.get_stats()
+end
+
+function get_resources()
+    local stats_controller = require "luci.controller.passwall2.stats"
+    return stats_controller.get_resources()
+end
+
+function run_diagnostic()
+    local stats_controller = require "luci.controller.passwall2.stats"
+    return stats_controller.run_diagnostic()
+end
+
+function get_tasks()
+    local stats_controller = require "luci.controller.passwall2.stats"
+    return stats_controller.get_tasks()
+end
+
+function create_backup()
+    local stats_controller = require "luci.controller.passwall2.stats"
+    return stats_controller.create_backup()
+end
+
+function list_backups()
+    local stats_controller = require "luci.controller.passwall2.stats"
+    return stats_controller.list_backups()
+end
+
+function start_monitor()
+    local stats_controller = require "luci.controller.passwall2.stats"
+    return stats_controller.start_monitor()
+end
+
+function stop_monitor()
+    local stats_controller = require "luci.controller.passwall2.stats"
+    return stats_controller.stop_monitor()
 end
 
 -- Reset configuration
@@ -75,7 +130,7 @@ function M.reset_config()
 
     luci.sys.call('/etc/init.d/passwall2 stop')
     luci.sys.call(
-    '[ -f "/usr/share/passwall2/0_default_config" ] && cp -f /usr/share/passwall2/0_default_config /etc/config/passwall2')
+        '[ -f "/usr/share/passwall2/0_default_config" ] && cp -f /usr/share/passwall2/0_default_config /etc/config/passwall2')
 
     logger.info("Configuration reset completed")
     http.redirect(api.url())
@@ -202,7 +257,7 @@ function M.gen_client_config()
     local id = http.formvalue("id")
     local config_file = api.TMP_PATH .. "/config_" .. id
     luci.sys.call(string.format(
-    "/usr/share/passwall2/app.sh run_socks flag=config_%s node=%s bind=127.0.0.1 socks_port=1080 config_file=%s no_run=1",
+        "/usr/share/passwall2/app.sh run_socks flag=config_%s node=%s bind=127.0.0.1 socks_port=1080 config_file=%s no_run=1",
         id, id, config_file))
 
     if nixio.fs.access(config_file) then
@@ -299,7 +354,7 @@ function M.connect_status()
     e.use_time = ""
     local url = http.formvalue("url")
     local result = luci.sys.exec('curl --connect-timeout 3 -o /dev/null -I -sk -w "%{http_code}:%{time_appconnect}" ' ..
-    url)
+        url)
     local code = tonumber(luci.sys.exec("echo -n '" .. result .. "' | awk -F ':' '{print $1}'") or "0")
     if code ~= 0 then
         local use_time = luci.sys.exec("echo -n '" .. result .. "' | awk -F ':' '{print $2}'")
@@ -331,11 +386,11 @@ function M.ping_node()
             address = api.get_ipv6_only(address)
         end
         e.ping = luci.sys.exec(string.format(
-        "echo -n $(tcping -q -c 1 -i 1 -t 2 -p %s %s 2>&1 | grep -o 'time=[0-9]*' | awk -F '=' '{print $2}') 2>/dev/null",
+            "echo -n $(tcping -q -c 1 -i 1 -t 2 -p %s %s 2>&1 | grep -o 'time=[0-9]*' | awk -F '=' '{print $2}') 2>/dev/null",
             port, address))
     else
         e.ping = luci.sys.exec(
-        "echo -n $(ping -c 1 -W 1 %q 2>&1 | grep -o 'time=[0-9]*' | awk -F '=' '{print $2}') 2>/dev/null" % address)
+            "echo -n $(ping -c 1 -W 1 %q 2>&1 | grep -o 'time=[0-9]*' | awk -F '=' '{print $2}') 2>/dev/null" % address)
     end
 
     logger.exit("ping_node")
@@ -720,7 +775,7 @@ function M.subscribe_del_node()
     local remark = http.formvalue("remark")
     if remark and remark ~= "" then
         luci.sys.call("lua /usr/share/" ..
-        appname .. "/subscribe.lua truncate " .. luci.util.shellquote(remark) .. " > /dev/null 2>&1")
+            appname .. "/subscribe.lua truncate " .. luci.util.shellquote(remark) .. " > /dev/null 2>&1")
         logger.info("Deleted subscription node: " .. remark)
     end
 

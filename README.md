@@ -2,8 +2,11 @@
 
 **PassWall 2** is a next-generation proxy client for OpenWrt, designed for performance, stability, and ease of use. It supports modern protocols like **Xray (VLESS, VMess)**, **Sing-box**, **Hysteria2**, and **Trojan**, providing a powerful yet user-friendly interface for managing your network connection.
 
-![License](https://img.shields.io/github/license/xiaorouji/openwrt-passwall)
-![Generic badge](https://img.shields.io/badge/OpenWrt-21.02%2B-blue.svg)
+
+## ⚠️ Warning
+
+**This is Sandbox/playground branch , dont use it . its all things for testing and brainstorming .
+
 
 ## ✨ Key Features
 

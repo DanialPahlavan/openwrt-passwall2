@@ -1,0 +1,163 @@
+/* PassWall2 Tooltip System */
+/* Pure CSS tooltips, no JavaScript required, accessible */
+
+.pw2-tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: help;
+}
+
+.pw2-tooltip-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #5e72e4;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+
+.pw2-tooltip-icon::before {
+    content: '?';
+}
+
+.pw2-tooltip-text {
+    visibility: hidden;
+    position: absolute;
+    z-index: 1000;
+    width: 250px;
+    padding: 8px 12px;
+    background-color: #2d3748;
+    color: #fff;
+    text-align: left;
+    border-radius: 4px;
+    font-size: 13px;
+    line-height: 1.4;
+    font-weight: normal;
+
+    /* Position below by default */
+    top: 125%;
+    left: 50%;
+    margin-left: -125px;
+
+    /* Fade in */
+    opacity: 0;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.pw2-tooltip-text::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent transparent #2d3748 transparent;
+}
+
+.pw2-tooltip:hover .pw2-tooltip-text,
+.pw2-tooltip:focus .pw2-tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Top position variant */
+.pw2-tooltip-top .pw2-tooltip-text {
+    top: auto;
+    bottom: 125%;
+}
+
+.pw2-tooltip-top .pw2-tooltip-text::after {
+    top: 100%;
+    bottom: auto;
+    border-color: #2d3748 transparent transparent transparent;
+}
+
+/* Left position variant */
+.pw2-tooltip-left .pw2-tooltip-text {
+    top: 50%;
+    left: auto;
+    right: 125%;
+    margin-left: 0;
+    margin-top: -20px;
+}
+
+.pw2-tooltip-left .pw2-tooltip-text::after {
+    top: 50%;
+    left: 100%;
+    right: auto;
+    margin-top: -5px;
+    margin-left: 0;
+    border-color: transparent transparent transparent #2d3748;
+}
+
+/* Right position variant */
+.pw2-tooltip-right .pw2-tooltip-text {
+    top: 50%;
+    left: 125%;
+    margin-left: 0;
+    margin-top: -20px;
+}
+
+.pw2-tooltip-right .pw2-tooltip-text::after {
+    top: 50%;
+    right: 100%;
+    left: auto;
+    margin-top: -5px;
+    border-color: transparent #2d3748 transparent transparent;
+}
+
+/* Mobile: Always show below, full width */
+@media (max-width: 768px) {
+    .pw2-tooltip-text {
+        width: 200px;
+        margin-left: -100px;
+        font-size: 12px;
+    }
+
+    /* Touch devices: tap to toggle */
+    .pw2-tooltip {
+        -webkit-tap-highlight-color: transparent;
+    }
+}
+
+/* Accessibility */
+.pw2-tooltip-icon:focus {
+    outline: 2px solid #5e72e4;
+    outline-offset: 2px;
+}
+
+/* Dark theme */
+@media (prefers-color-scheme: dark) {
+    .pw2-tooltip-icon {
+        background: #4a5568;
+    }
+
+    .pw2-tooltip-text {
+        background-color: #1a202c;
+        border: 1px solid #4a5568;
+    }
+
+    .pw2-tooltip-text::after {
+        border-bottom-color: #1a202c;
+    }
+
+    .pw2-tooltip-top .pw2-tooltip-text::after {
+        border-top-color: #1a202c;
+        border-bottom-color: transparent;
+    }
+
+    .pw2-tooltip-left .pw2-tooltip-text::after {
+        border-left-color: #1a202c;
+    }
+
+    .pw2-tooltip-right .pw2-tooltip-text::after {
+        border-right-color: #1a202c;
+    }
+}
