@@ -1,4 +1,6 @@
-module("luci.passwall2.core.utils.logger", package.seeall)
+local M = {}
+setmetatable(M, { __index = _G })
+_ENV = M
 
 local fs = require "nixio.fs"
 local sys = require "luci.sys"
@@ -39,7 +41,7 @@ local logger_state = {
     buffer = {},
     buffer_size = 0,
     buffer_max_size = 1024 * 1024, -- 1MB buffer
-    flush_interval = 5, -- seconds
+    flush_interval = 5,            -- seconds
     last_flush = 0
 }
 
@@ -50,18 +52,20 @@ function init(config)
             logger_state.config[k] = v
         end
     end
-    
+
     -- Ensure log directory exists
     local log_dir = logger_state.config.file:match("(.*/)")
     if log_dir then
         fs.mkdirr(log_dir)
     end
-    
+
     -- Open log file
     open_log_file()
-    
+
     -- Set up periodic flush
-    sys.call(string.format('echo "lua -e \\"require \\'luci.passwall2.core.utils.logger\\'.flush()\\" > /dev/null 2>&1" | at now + %d minutes', logger_state.flush_interval))
+    sys.call(string.format(
+        [[echo "lua -e \"require 'luci.passwall2.core.utils.logger'.flush()\" > /dev/null 2>&1" | at now + %d minutes]],
+        logger_state.flush_interval))
 end
 
 -- Open log file
@@ -85,13 +89,13 @@ end
 -- Rotate log file
 function rotate_log()
     if not logger_state.config.file then return end
-    
+
     local log_file = logger_state.config.file
     local max_files = logger_state.config.max_files or 5
-    
+
     -- Close current file
     close_log_file()
-    
+
     -- Rotate existing files
     for i = max_files - 1, 1, -1 do
         local old_file = log_file .. "." .. i
@@ -100,12 +104,12 @@ function rotate_log()
             fs.move(old_file, new_file)
         end
     end
-    
+
     -- Move current log to .1
     if fs.access(log_file) then
         fs.move(log_file, log_file .. ".1")
     end
-    
+
     -- Open new log file
     open_log_file()
 end
@@ -113,7 +117,7 @@ end
 -- Check if log file needs rotation
 function check_rotation()
     if not logger_state.config.file then return end
-    
+
     local file_size = fs.stat(logger_state.config.file, "size")
     if file_size and file_size > (logger_state.config.max_size or 1024 * 1024) then
         rotate_log()
@@ -124,12 +128,12 @@ end
 function format_message(level, message, context)
     local timestamp = os.date("%Y-%m-%d %H:%M:%S")
     local level_name = LOG_LEVEL_NAMES[level] or "UNKNOWN"
-    
+
     local formatted = logger_state.config.format
         :gsub("%%timestamp%%", timestamp)
         :gsub("%%level%%", level_name)
         :gsub("%%message%%", message)
-    
+
     -- Add context information
     if context then
         local context_str = ""
@@ -138,7 +142,7 @@ function format_message(level, message, context)
         end
         formatted = formatted .. context_str
     end
-    
+
     return formatted
 end
 
@@ -161,7 +165,7 @@ end
 function write_to_buffer(message)
     table.insert(logger_state.buffer, message)
     logger_state.buffer_size = logger_state.buffer_size + #message + 1
-    
+
     -- Check buffer size
     if logger_state.buffer_size > logger_state.buffer_max_size then
         flush()
@@ -188,15 +192,15 @@ end
 -- Log message
 function log(level, message, context)
     if not should_log(level) then return end
-    
+
     local formatted_message = format_message(level, message, context)
-    
+
     -- Write to console
     write_to_console(formatted_message)
-    
+
     -- Write to buffer (for performance)
     write_to_buffer(formatted_message)
-    
+
     -- Check rotation
     check_rotation()
 end
@@ -237,7 +241,7 @@ function enter(function_name, args)
             end
             arg_str = " [" .. table.concat(arg_parts, ", ") .. "]"
         end
-        debug("Entering " .. function_name .. arg_str, { function = function_name })
+        debug("Entering " .. function_name .. arg_str, { func_name = function_name })
     end
 end
 
@@ -248,26 +252,28 @@ function exit(function_name, result)
         if result then
             result_str = " [result=" .. tostring(result) .. "]"
         end
-        debug("Exiting " .. function_name .. result_str, { function = function_name })
+        debug("Exiting " .. function_name .. result_str, { func_name = function_name })
     end
 end
 
 -- Log function with timing
 function timed(function_name, func, ...)
-    enter(function_name, {...})
+    enter(function_name, { ... })
     local start_time = os.clock()
     local success, result = pcall(func, ...)
     local end_time = os.clock()
     local duration = end_time - start_time
-    
+
     if success then
         exit(function_name, result)
         if should_log(LOG_LEVELS.INFO) then
-            info(string.format("%s completed in %.3f seconds", function_name, duration), { function = function_name, duration = duration })
+            local msg = function_name .. " completed in " .. string.format("%.3f", duration) .. " seconds"
+            info(msg, { func_name = function_name, duration = duration })
         end
         return result
     else
-        error(string.format("%s failed after %.3f seconds: %s", function_name, duration, result), { function = function_name, duration = duration })
+        error(string.format("%s failed after %.3f seconds: %s", function_name, duration, result),
+            { func_name = function_name, duration = duration })
         return nil, result
     end
 end
@@ -298,7 +304,7 @@ function set_level(level)
             end
         end
     end
-    
+
     if LOG_LEVELS[level] then
         logger_state.config.level = LOG_LEVELS[level]
         info(string.format("Log level changed to %s", LOG_LEVEL_NAMES[level]), { level = level })
@@ -356,10 +362,10 @@ end
 -- Wrap function with logging
 function wrap_with_logging(func_name, func)
     return function(...)
-        enter(func_name, {...})
+        enter(func_name, { ... })
         local result = { func(...) }
         exit(func_name, result[1])
-        return unpack(result)
+        return table.unpack(result)
     end
 end
 
@@ -412,7 +418,7 @@ function log_system_info()
         memory = sys.exec("free -h"),
         disk = sys.exec("df -h")
     }
-    
+
     for key, value in pairs(sys_info) do
         info(string.format("System %s: %s", key, value:gsub("\n", " ")), { type = "system_info", key = key })
     end

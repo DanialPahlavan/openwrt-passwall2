@@ -1,6 +1,7 @@
-module("luci.controller.passwall2", package.seeall)
+-- Modern Lua module pattern for OpenWrt 24.x
+local M = {}
 
--- Import the new modular controller
+-- Import the newmodular controller
 local main_controller = require "luci.passwall2.controller.main"
 local api = require "luci.passwall2.api"
 local appname = api.appname
@@ -12,7 +13,7 @@ local fs = api.fs
 local jsonStringify = luci.jsonc.stringify
 local jsonParse = luci.jsonc.parse
 
-function index()
+function M.index()
 	-- Use the new modular controller's index function
 	return main_controller.index()
 end
@@ -20,14 +21,16 @@ end
 -- Keep only the functions that are not in the new modular controller
 -- These are the server-side and backup functions that are specific to the old controller
 
-function server_user_status()
+function M.server_user_status()
 	local e = {}
 	e.index = http.formvalue("index")
-	e.status = luci.sys.call(string.format("/bin/busybox top -bn1 | grep -v 'grep' | grep '%s/bin/' | grep -i '%s' >/dev/null", appname .. "_server", http.formvalue("id"))) == 0
+	e.status = luci.sys.call(string.format(
+	"/bin/busybox top -bn1 | grep -v 'grep' | grep '%s/bin/' | grep -i '%s' >/dev/null", appname .. "_server",
+		http.formvalue("id"))) == 0
 	main_controller.http_write_json(e)
 end
 
-function server_user_log()
+function M.server_user_log()
 	local id = http.formvalue("id")
 	if nixio.fs.access("/tmp/etc/passwall2_server/" .. id .. ".log") then
 		local content = luci.sys.exec("cat /tmp/etc/passwall2_server/" .. id .. ".log")
@@ -38,25 +41,25 @@ function server_user_log()
 	end
 end
 
-function server_get_log()
+function M.server_get_log()
 	http.write(luci.sys.exec("[ -f '/tmp/log/passwall2_server.log' ] && cat /tmp/log/passwall2_server.log"))
 end
 
-function server_clear_log()
+function M.server_clear_log()
 	luci.sys.call("echo '' > /tmp/log/passwall2_server.log")
 end
 
-function app_check()
+function M.app_check()
 	local json = api.to_check_self()
 	main_controller.http_write_json(json)
 end
 
-function com_check(comname)
+function M.com_check(comname)
 	local json = api.to_check("", comname)
 	main_controller.http_write_json(json)
 end
 
-function com_update(comname)
+function M.com_update(comname)
 	local json = nil
 	local task = http.formvalue("task")
 	if task == "extract" then
@@ -76,7 +79,7 @@ local backup_files = {
 	"/usr/share/passwall2/domains_excluded"
 }
 
-function create_backup()
+function M.create_backup()
 	local date = os.date("%y%m%d%H%M")
 	local tar_file = "/tmp/passwall2-" .. date .. "-backup.tar.gz"
 	fs.remove(tar_file)
@@ -89,7 +92,7 @@ function create_backup()
 	fs.remove(tar_file)
 end
 
-function restore_backup()
+function M.restore_backup()
 	local result = { status = "error", message = "unknown error" }
 	local ok, err = pcall(function()
 		local filename = http.formvalue("filename")
@@ -135,7 +138,9 @@ function restore_backup()
 				luci.sys.call('/etc/init.d/passwall2_server restart > /dev/null 2>&1 &')
 				result = { status = "success", message = "Upload completed", path = file_path }
 			else
-				api.log(0, string.format(" * PassWall2 %s", i18n.translate("Configuration file decompression failed, please try again!")))
+				api.log(0,
+					string.format(" * PassWall2 %s",
+						i18n.translate("Configuration file decompression failed, please try again!")))
 				result = { status = "error", message = "Decompression failed" }
 			end
 			api.sys.call("rm -rf " .. temp_dir)
@@ -150,7 +155,7 @@ function restore_backup()
 	main_controller.http_write_json(result)
 end
 
-function geo_view()
+function M.geo_view()
 	local action = luci.http.formvalue("action")
 	local value = luci.http.formvalue("value")
 	if not value or value == "" then
@@ -188,18 +193,23 @@ function geo_view()
 		else
 			geo_type, file_path = "geosite", geosite_path
 		end
-		cmd = string.format("geoview -type %s -action lookup -input '%s' -value '%s' -lowmem=true", geo_type, file_path, value)
+		cmd = string.format("geoview -type %s -action lookup -input '%s' -value '%s' -lowmem=true", geo_type, file_path,
+			value)
 		geo_string = luci.sys.exec(cmd):lower()
 		if geo_string ~= "" then
 			local lines, rules, seen = {}, {}, {}
 			for line in geo_string:gmatch("([^\n]+)") do
 				lines[#lines + 1] = geo_type .. ":" .. line
 				for _, r in ipairs(get_rules(line, geo_type) or {}) do
-					if not seen[r] then seen[r] = true; rules[#rules + 1] = r end
+					if not seen[r] then
+						seen[r] = true; rules[#rules + 1] = r
+					end
 				end
 			end
 			for _, r in ipairs(get_rules(value, geo_type) or {}) do
-				if not seen[r] then seen[r] = true; rules[#rules + 1] = r end
+				if not seen[r] then
+					seen[r] = true; rules[#rules + 1] = r
+				end
 			end
 			geo_string = table.concat(lines, "\n")
 			if #rules > 0 then
@@ -216,19 +226,20 @@ function geo_view()
 		if prefix and list and list ~= "" then
 			geo_type = prefix:sub(1, -2)
 			file_path = (geo_type == "geoip") and geoip_path or geosite_path
-			cmd = string.format("geoview -type %s -action extract -input '%s' -list '%s' -lowmem=true", geo_type, file_path, list)
+			cmd = string.format("geoview -type %s -action extract -input '%s' -list '%s' -lowmem=true", geo_type,
+				file_path, list)
 			geo_string = luci.sys.exec(cmd)
 		end
 	end
 	http.prepare_content("text/plain")
-	if geo_string and geo_string ~="" then
+	if geo_string and geo_string ~= "" then
 		http.write(geo_string)
 	else
 		http.write(i18n.translate("No results were found!"))
 	end
 end
 
-function backup_config()
+function M.backup_config()
 	local config_path = "/etc/config/passwall2"
 	local reader = ltn12.source.file(io.open(config_path, "r"))
 	http.header('Content-Disposition', 'attachment; filename="passwall2_backup.config"')
@@ -236,13 +247,13 @@ function backup_config()
 	ltn12.pump.all(reader, http.write)
 end
 
-function restore_config()
+function M.restore_config()
 	-- Legacy placeholder or custom upload handler if needed.
 	-- Actual restore handled by CBI model upload for simplicity.
 	http.redirect(api.url("maintenance", "backup"))
 end
 
-function clear_dns_cache()
+function M.clear_dns_cache()
 	-- Flush DNS cache logic (e.g. reload dnsmasq or flush ipset)
 	-- Passwall usually handles this on restart/reload, but we can try specific commands.
 	-- For now, allow simple restart of DNS helper or full reload.
@@ -250,16 +261,16 @@ function clear_dns_cache()
 	main_controller.http_write_json({ code = 1, msg = "DNS Cache Cleared" })
 end
 
-function restart_service()
+function M.restart_service()
 	luci.sys.call("/etc/init.d/passwall2 restart")
 	main_controller.http_write_json({ code = 1, msg = "Service Restarted" })
 end
 
-function create_advanced_backup()
+function M.create_advanced_backup()
 	local date = os.date("%y%m%d%H%M")
 	local tar_file = "/tmp/passwall2-" .. date .. "-advanced-backup.tar.gz"
 	fs.remove(tar_file)
-	
+
 	-- Create comprehensive backup including logs, cache, and system state
 	local backup_files = {
 		"/etc/config/passwall2",
@@ -271,7 +282,7 @@ function create_advanced_backup()
 		"/tmp/etc/passwall2",
 		"/tmp/etc/passwall2_server"
 	}
-	
+
 	-- Filter out files that don't exist
 	local existing_files = {}
 	for _, file in ipairs(backup_files) do
@@ -279,12 +290,12 @@ function create_advanced_backup()
 			table.insert(existing_files, file)
 		end
 	end
-	
+
 	if #existing_files > 0 then
 		local cmd = "tar -czf " .. tar_file .. " " .. table.concat(existing_files, " ")
 		api.sys.call(cmd)
 	end
-	
+
 	http.header("Content-Disposition", "attachment; filename=passwall2-" .. date .. "-advanced-backup.tar.gz")
 	http.header("X-Backup-Filename", "passwall2-" .. date .. "-advanced-backup.tar.gz")
 	http.prepare_content("application/octet-stream")
@@ -294,3 +305,6 @@ end
 
 -- JSON helper functions are provided by main_controller
 -- Use main_controller.http_write_json(), main_controller.http_write_json_ok(), main_controller.http_write_json_error()
+
+return M
+
