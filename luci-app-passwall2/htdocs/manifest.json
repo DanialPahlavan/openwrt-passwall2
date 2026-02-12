@@ -1,114 +1,117 @@
 {
-  "name": "PassWall 2",
-  "short_name": "PW2",
-  "description": "PassWall 2 - Next-generation proxy client for OpenWrt",
-  "start_url": "/cgi-bin/luci/admin/services/passwall2",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#5e72e4",
-  "orientation": "portrait-primary",
-  "icons": [
-    {
-      "src": "/luci-static/resources/view/passwall2/icons/icon-72.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/luci-static/resources/view/passwall2/icons/icon-96.png",
-      "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/luci-static/resources/view/passwall2/icons/icon-128.png",
-      "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/luci-static/resources/view/passwall2/icons/icon-144.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/luci-static/resources/view/passwall2/icons/icon-152.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/luci-static/resources/view/passwall2/icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/luci-static/resources/view/passwall2/icons/icon-384.png",
-      "sizes": "384x384",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/luci-static/resources/view/passwall2/icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "categories": ["utilities", "networking"],
-  "screenshots": [
-    {
-      "src": "/luci-static/resources/view/passwall2/screenshots/dashboard.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "label": "Dashboard"
-    },
-    {
-      "src": "/luci-static/resources/view/passwall2/screenshots/nodes.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "label": "Node Management"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Dashboard",
-      "short_name": "Dashboard",
-      "description": "View status dashboard",
-      "url": "/cgi-bin/luci/admin/services/passwall2",
-      "icons": [
+    "name": "PassWall 3 Beta",
+    "short_name": "PW3β",
+    "description": "PassWall 3 Beta - Next-generation proxy client for OpenWrt with AI-powered features",
+    "start_url": "/cgi-bin/luci/admin/services/passwall2",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#5e72e4",
+    "orientation": "portrait-primary",
+    "icons": [
         {
-          "src": "/luci-static/resources/view/passwall2/icons/dashboard-96.png",
-          "sizes": "96x96"
-        }
-      ]
-    },
-    {
-      "name": "Nodes",
-      "short_name": "Nodes",
-      "description": "Manage nodes",
-      "url": "/cgi-bin/luci/admin/services/passwall2/nodes",
-      "icons": [
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='80'>🚀</text></svg>",
+            "sizes": "72x72",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
         {
-          "src": "/luci-static/resources/view/passwall2/icons/nodes-96.png",
-          "sizes": "96x96"
-        }
-      ]
-    },
-    {
-      "name": "Statistics",
-      "short_name": "Stats",
-      "description": "View statistics",
-      "url": "/cgi-bin/luci/admin/services/passwall2/statistics",
-      "icons": [
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='80'>🚀</text></svg>",
+            "sizes": "96x96",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
         {
-          "src": "/luci-static/resources/view/passwall2/icons/stats-96.png",
-          "sizes": "96x96"
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='80'>🚀</text></svg>",
+            "sizes": "128x128",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='80'>🚀</text></svg>",
+            "sizes": "144x144",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='80'>🚀</text></svg>",
+            "sizes": "152x152",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='80'>🚀</text></svg>",
+            "sizes": "192x192",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='80'>🚀</text></svg>",
+            "sizes": "384x384",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='80'>🚀</text></svg>",
+            "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
         }
-      ]
-    }
-  ],
-  "prefer_related_applications": false
+    ],
+    "categories": [
+        "utilities",
+        "networking"
+    ],
+    "screenshots": [
+        {
+            "src": "/luci-static/resources/view/passwall2/screenshots/dashboard.png",
+            "sizes": "1280x720",
+            "type": "image/png",
+            "label": "Dashboard"
+        },
+        {
+            "src": "/luci-static/resources/view/passwall2/screenshots/nodes.png",
+            "sizes": "1280x720",
+            "type": "image/png",
+            "label": "Node Management"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Dashboard",
+            "short_name": "Dashboard",
+            "description": "View status dashboard",
+            "url": "/cgi-bin/luci/admin/services/passwall2",
+            "icons": [
+                {
+                    "src": "/luci-static/resources/view/passwall2/icons/dashboard-96.png",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "Nodes",
+            "short_name": "Nodes",
+            "description": "Manage nodes",
+            "url": "/cgi-bin/luci/admin/services/passwall2/nodes",
+            "icons": [
+                {
+                    "src": "/luci-static/resources/view/passwall2/icons/nodes-96.png",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "Statistics",
+            "short_name": "Stats",
+            "description": "View statistics",
+            "url": "/cgi-bin/luci/admin/services/passwall2/statistics",
+            "icons": [
+                {
+                    "src": "/luci-static/resources/view/passwall2/icons/stats-96.png",
+                    "sizes": "96x96"
+                }
+            ]
+        }
+    ],
+    "prefer_related_applications": false
 }

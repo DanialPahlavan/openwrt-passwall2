@@ -4,47 +4,47 @@
  */
 
 (function () {
-    'use strict';
+  'use strict';
 
-    const SubscriptionManager = {
-        subscriptions: [],
-        updateHistory: [],
-        autoUpdateInterval: null,
+  const SubscriptionManager = {
+    subscriptions: [],
+    updateHistory: [],
+    autoUpdateInterval: null,
 
-        // Initialize
-        init: function () {
-            this.loadFromStorage();
-            this.createManagementPanel();
-            this.setupAutoUpdate();
-            this.attachEventListeners();
-        },
+    // Initialize
+    init: function () {
+      this.loadFromStorage();
+      this.createManagementPanel();
+      this.setupAutoUpdate();
+      this.attachEventListeners();
+    },
 
-        // Load from localStorage
-        loadFromStorage: function () {
-            try {
-                this.subscriptions = JSON.parse(localStorage.getItem('pw2-subscriptions') || '[]');
-                this.updateHistory = JSON.parse(localStorage.getItem('pw2-update-history') || '[]');
-            } catch (e) {
-                console.error('Failed to load subscriptions:', e);
-            }
-        },
+    // Load from localStorage
+    loadFromStorage: function () {
+      try {
+        this.subscriptions = JSON.parse(localStorage.getItem('pw2-subscriptions') || '[]');
+        this.updateHistory = JSON.parse(localStorage.getItem('pw2-update-history') || '[]');
+      } catch (e) {
+        console.error('Failed to load subscriptions:', e);
+      }
+    },
 
-        // Save to localStorage
-        saveToStorage: function () {
-            try {
-                localStorage.setItem('pw2-subscriptions', JSON.stringify(this.subscriptions));
-                localStorage.setItem('pw2-update-history', JSON.stringify(this.updateHistory));
-            } catch (e) {
-                console.error('Failed to save subscriptions:', e);
-            }
-        },
+    // Save to localStorage
+    saveToStorage: function () {
+      try {
+        localStorage.setItem('pw2-subscriptions', JSON.stringify(this.subscriptions));
+        localStorage.setItem('pw2-update-history', JSON.stringify(this.updateHistory));
+      } catch (e) {
+        console.error('Failed to save subscriptions:', e);
+      }
+    },
 
-        // Create management panel
-        createManagementPanel: function () {
-            const panel = document.createElement('div');
-            panel.className = 'pw-card mb-4';
-            panel.id = 'subscription-manager-panel';
-            panel.innerHTML = `
+    // Create management panel
+    createManagementPanel: function () {
+      const panel = document.createElement('div');
+      panel.className = 'pw-card mb-4';
+      panel.id = 'subscription-manager-panel';
+      panel.innerHTML = `
         <div class="pw-card-header">
           <h3 class="pw-card-title">Subscription Management</h3>
           <div class="flex gap-2">
@@ -98,22 +98,22 @@
         </div>
       `;
 
-            const container = document.querySelector('.cbi-section') || document.querySelector('#maincontent');
-            if (container) {
-                container.insertBefore(panel, container.firstChild);
-            }
+      const container = document.querySelector('.cbi-section') || document.querySelector('#maincontent');
+      if (container) {
+        container.insertBefore(panel, container.firstChild);
+      }
 
-            this.renderSubscriptions();
-            this.renderUpdateHistory();
-        },
+      this.renderSubscriptions();
+      this.renderUpdateHistory();
+    },
 
-        // Render subscriptions
-        renderSubscriptions: function () {
-            const container = document.getElementById('subscriptions-list');
-            if (!container) return;
+    // Render subscriptions
+    renderSubscriptions: function () {
+      const container = document.getElementById('subscriptions-list');
+      if (!container) return;
 
-            if (this.subscriptions.length === 0) {
-                container.innerHTML = `
+      if (this.subscriptions.length === 0) {
+        container.innerHTML = `
           <div class="pw-empty-state">
             <div class="pw-empty-state-icon">📥</div>
             <div class="pw-empty-state-title">No Subscriptions</div>
@@ -125,15 +125,15 @@
             </button>
           </div>
         `;
-                return;
-            }
+        return;
+      }
 
-            container.innerHTML = this.subscriptions.map((sub, index) => {
-                const lastUpdate = sub.lastUpdate ? new Date(sub.lastUpdate).toLocaleString() : 'Never';
-                const nextUpdate = sub.nextUpdate ? new Date(sub.nextUpdate).toLocaleString() : 'Not scheduled';
-                const status = this.getSubscriptionStatus(sub);
+      container.innerHTML = this.subscriptions.map((sub, index) => {
+        const lastUpdate = sub.lastUpdate ? new Date(sub.lastUpdate).toLocaleString() : 'Never';
+        const nextUpdate = sub.nextUpdate ? new Date(sub.nextUpdate).toLocaleString() : 'Not scheduled';
+        const status = this.getSubscriptionStatus(sub);
 
-                return `
+        return `
           <div class="pw-card-compact mb-3">
             <div class="flex items-start justify-between">
               <div class="flex-1">
@@ -163,53 +163,53 @@
             </div>
           </div>
         `;
-            }).join('');
-        },
+      }).join('');
+    },
 
-        // Get subscription status
-        getSubscriptionStatus: function (sub) {
-            if (sub.lastError) {
-                return { text: 'Error', color: 'error' };
-            }
-            if (!sub.lastUpdate) {
-                return { text: 'Never Updated', color: 'neutral' };
-            }
+    // Get subscription status
+    getSubscriptionStatus: function (sub) {
+      if (sub.lastError) {
+        return { text: 'Error', color: 'error' };
+      }
+      if (!sub.lastUpdate) {
+        return { text: 'Never Updated', color: 'neutral' };
+      }
 
-            const hoursSinceUpdate = (Date.now() - new Date(sub.lastUpdate).getTime()) / (1000 * 60 * 60);
-            if (hoursSinceUpdate < 24) {
-                return { text: 'Up to date', color: 'success' };
-            } else if (hoursSinceUpdate < 168) {
-                return { text: 'Needs Update', color: 'warning' };
-            } else {
-                return { text: 'Outdated', color: 'error' };
-            }
-        },
+      const hoursSinceUpdate = (Date.now() - new Date(sub.lastUpdate).getTime()) / (1000 * 60 * 60);
+      if (hoursSinceUpdate < 24) {
+        return { text: 'Up to date', color: 'success' };
+      } else if (hoursSinceUpdate < 168) {
+        return { text: 'Needs Update', color: 'warning' };
+      } else {
+        return { text: 'Outdated', color: 'error' };
+      }
+    },
 
-        // Truncate URL for display
-        truncateUrl: function (url, maxLength = 50) {
-            if (url.length <= maxLength) return url;
-            return url.substring(0, maxLength) + '...';
-        },
+    // Truncate URL for display
+    truncateUrl: function (url, maxLength = 50) {
+      if (url.length <= maxLength) return url;
+      return url.substring(0, maxLength) + '...';
+    },
 
-        // Render update history
-        renderUpdateHistory: function () {
-            const container = document.getElementById('update-history-list');
-            if (!container) return;
+    // Render update history
+    renderUpdateHistory: function () {
+      const container = document.getElementById('update-history-list');
+      if (!container) return;
 
-            if (this.updateHistory.length === 0) {
-                container.innerHTML = '<p class="text-sm text-muted">No update history yet.</p>';
-                return;
-            }
+      if (this.updateHistory.length === 0) {
+        container.innerHTML = '<p class="text-sm text-muted">No update history yet.</p>';
+        return;
+      }
 
-            const recent = this.updateHistory.slice(-5).reverse(); // Last 5, newest first
-            container.innerHTML = recent.map(entry => {
-                const time = new Date(entry.timestamp).toLocaleString();
-                const icon = entry.success ? '✅' : '❌';
-                const changeInfo = entry.changes ?
-                    `+${entry.changes.added || 0} / -${entry.changes.removed || 0}` :
-                    'No changes';
+      const recent = this.updateHistory.slice(-5).reverse(); // Last 5, newest first
+      container.innerHTML = recent.map(entry => {
+        const time = new Date(entry.timestamp).toLocaleString();
+        const icon = entry.success ? '✅' : '❌';
+        const changeInfo = entry.changes ?
+          `+${entry.changes.added || 0} / -${entry.changes.removed || 0}` :
+          'No changes';
 
-                return `
+        return `
           <div class="flex items-center justify-between py-2 border-bottom">
             <div class="flex items-center gap-2">
               <span>${icon}</span>
@@ -221,20 +221,20 @@
             </div>
           </div>
         `;
-            }).join('');
-        },
+      }).join('');
+    },
 
-        // Add subscription
-        addSubscription: function () {
-            const dialog = this.showSubscriptionDialog();
-        },
+    // Add subscription
+    addSubscription: function () {
+      const dialog = this.showSubscriptionDialog();
+    },
 
-        // Show subscription dialog
-        showSubscriptionDialog: function (subscription = null) {
-            const isEdit = subscription !== null;
-            const dialog = document.createElement('div');
-            dialog.className = 'pw-modal';
-            dialog.innerHTML = `
+    // Show subscription dialog
+    showSubscriptionDialog: function (subscription = null) {
+      const isEdit = subscription !== null;
+      const dialog = document.createElement('div');
+      dialog.className = 'pw-modal';
+      dialog.innerHTML = `
         <div class="pw-modal-overlay" onclick="this.parentElement.remove()"></div>
         <div class="pw-modal-content pw-card" style="max-width: 600px; margin: 10% auto;">
           <div class="pw-card-header">
@@ -261,6 +261,26 @@
                 <span class="text-sm">Show comparison after update</span>
               </label>
             </div>
+            <div class="mb-4">
+              <label class="flex items-center gap-2">
+                <input type="checkbox" id="sub-limit-nodes" ${subscription?.limitNodes !== false ? 'checked' : ''} />
+                <span class="text-sm">Limit nodes (recommended for low-resource devices)</span>
+              </label>
+            </div>
+            <div class="mb-4" id="node-limit-settings">
+              <label class="text-sm font-medium mb-2 block">Maximum Nodes per Subscription</label>
+              <div class="flex items-center gap-2">
+                <input type="number" id="sub-max-nodes" class="pw-input" style="width: 100px;" value="${subscription?.maxNodes || 30}" min="5" max="100" />
+                <span class="text-sm text-muted">nodes (default: 30)</span>
+              </div>
+              <p class="text-xs text-muted mt-1">⚠️ Too many nodes can cause high RAM/CPU usage on routers</p>
+            </div>
+            <div class="mb-4">
+              <label class="flex items-center gap-2">
+                <input type="checkbox" id="sub-only-working" ${subscription?.onlyWorking ? 'checked' : ''} />
+                <span class="text-sm">Only add working nodes (test before adding)</span>
+              </label>
+            </div>
           </div>
           <div class="pw-card-footer">
             <button class="pw-btn pw-btn-ghost" onclick="this.closest('.pw-modal').remove()">Cancel</button>
@@ -271,245 +291,251 @@
         </div>
       `;
 
-            document.body.appendChild(dialog);
-        },
+      document.body.appendChild(dialog);
+    },
 
-        // Save subscription
-        saveSubscription: function (isEdit) {
-            const name = document.getElementById('sub-name').value.trim();
-            const url = document.getElementById('sub-url').value.trim();
-            const autoUpdate = document.getElementById('sub-auto-update').checked;
-            const showComparison = document.getElementById('sub-compare').checked;
+    // Save subscription
+    saveSubscription: function (isEdit) {
+      const name = document.getElementById('sub-name').value.trim();
+      const url = document.getElementById('sub-url').value.trim();
+      const autoUpdate = document.getElementById('sub-auto-update').checked;
+      const showComparison = document.getElementById('sub-compare').checked;
+      const limitNodes = document.getElementById('sub-limit-nodes').checked;
+      const maxNodes = parseInt(document.getElementById('sub-max-nodes').value) || 30;
+      const onlyWorking = document.getElementById('sub-only-working').checked;
 
-            if (!name || !url) {
-                if (window.PW2Notify) {
-                    window.PW2Notify.warning('Please fill in all fields');
-                }
-                return;
-            }
+      if (!name || !url) {
+        if (window.PW2Notify) {
+          window.PW2Notify.warning('Please fill in all fields');
+        }
+        return;
+      }
 
-            const subscription = {
-                id: Date.now(),
-                name,
-                url,
-                autoUpdate,
-                showComparison,
-                nodeCount: 0,
-                lastUpdate: null,
-                nextUpdate: autoUpdate ? this.calculateNextUpdate() : null,
-                lastError: null
+      const subscription = {
+        id: Date.now(),
+        name,
+        url,
+        autoUpdate,
+        showComparison,
+        limitNodes,
+        maxNodes,
+        onlyWorking,
+        nodeCount: 0,
+        lastUpdate: null,
+        nextUpdate: autoUpdate ? this.calculateNextUpdate() : null,
+        lastError: null
+      };
+
+      if (isEdit) {
+        // Update existing
+        const index = this.subscriptions.findIndex(s => s.id === subscription.id);
+        if (index >= 0) {
+          this.subscriptions[index] = subscription;
+        }
+      } else {
+        // Add new
+        this.subscriptions.push(subscription);
+      }
+
+      this.saveToStorage();
+      this.renderSubscriptions();
+      document.querySelector('.pw-modal').remove();
+
+      if (window.PW2Notify) {
+        window.PW2Notify.success(`Subscription ${isEdit ? 'updated' : 'added'} `);
+      }
+    },
+
+    // Edit subscription
+    editSubscription: function (index) {
+      const subscription = this.subscriptions[index];
+      this.showSubscriptionDialog(subscription);
+    },
+
+    // Delete subscription
+    deleteSubscription: function (index) {
+      const sub = this.subscriptions[index];
+      if (!confirm(`Delete subscription "${sub.name}" ? `)) return;
+
+      this.subscriptions.splice(index, 1);
+      this.saveToStorage();
+      this.renderSubscriptions();
+
+      if (window.PW2Notify) {
+        window.PW2Notify.success('Subscription deleted');
+      }
+    },
+
+    // Update single subscription
+    updateSingle: async function (index) {
+      const sub = this.subscriptions[index];
+
+      if (window.PW2Notify) {
+        window.PW2Notify.info(`Updating "${sub.name}"...`);
+      }
+
+      try {
+        // Simulate update
+        await this.simulateUpdate(sub);
+
+        sub.lastUpdate = new Date().toISOString();
+        sub.lastError = null;
+        sub.nextUpdate = sub.autoUpdate ? this.calculateNextUpdate() : null;
+
+        this.saveToStorage();
+        this.renderSubscriptions();
+
+        if (window.PW2Notify) {
+          window.PW2Notify.success(`"${sub.name}" updated successfully`);
+        }
+      } catch (error) {
+        sub.lastError = error.message;
+        this.saveToStorage();
+        this.renderSubscriptions();
+
+        if (window.PW2Notify) {
+          window.PW2Notify.error(`Failed to update "${sub.name}"`);
+        }
+      }
+    },
+
+    // Update all subscriptions
+    updateAll: async function () {
+      if (this.subscriptions.length === 0) {
+        if (window.PW2Notify) {
+          window.PW2Notify.warning('No subscriptions to update');
+        }
+        return;
+      }
+
+      if (window.PW2Notify) {
+        window.PW2Notify.info(`Updating ${this.subscriptions.length} subscriptions...`);
+      }
+
+      for (let i = 0; i < this.subscriptions.length; i++) {
+        await this.updateSingle(i);
+        // Small delay between updates
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      if (window.PW2Notify) {
+        window.PW2Notify.success('All subscriptions updated');
+      }
+    },
+
+    // Simulate update (replace with real API call)
+    simulateUpdate: async function (sub) {
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          if (Math.random() > 0.1) { // 90% success rate
+            const changes = {
+              added: Math.floor(Math.random() * 10),
+              removed: Math.floor(Math.random() * 5)
             };
 
-            if (isEdit) {
-                // Update existing
-                const index = this.subscriptions.findIndex(s => s.id === subscription.id);
-                if (index >= 0) {
-                    this.subscriptions[index] = subscription;
-                }
-            } else {
-                // Add new
-                this.subscriptions.push(subscription);
-            }
-
-            this.saveToStorage();
-            this.renderSubscriptions();
-            document.querySelector('.pw-modal').remove();
-
-            if (window.PW2Notify) {
-                window.PW2Notify.success(`Subscription ${isEdit ? 'updated' : 'added'}`);
-            }
-        },
-
-        // Edit subscription
-        editSubscription: function (index) {
-            const subscription = this.subscriptions[index];
-            this.showSubscriptionDialog(subscription);
-        },
-
-        // Delete subscription
-        deleteSubscription: function (index) {
-            const sub = this.subscriptions[index];
-            if (!confirm(`Delete subscription "${sub.name}"?`)) return;
-
-            this.subscriptions.splice(index, 1);
-            this.saveToStorage();
-            this.renderSubscriptions();
-
-            if (window.PW2Notify) {
-                window.PW2Notify.success('Subscription deleted');
-            }
-        },
-
-        // Update single subscription
-        updateSingle: async function (index) {
-            const sub = this.subscriptions[index];
-
-            if (window.PW2Notify) {
-                window.PW2Notify.info(`Updating "${sub.name}"...`);
-            }
-
-            try {
-                // Simulate update
-                await this.simulateUpdate(sub);
-
-                sub.lastUpdate = new Date().toISOString();
-                sub.lastError = null;
-                sub.nextUpdate = sub.autoUpdate ? this.calculateNextUpdate() : null;
-
-                this.saveToStorage();
-                this.renderSubscriptions();
-
-                if (window.PW2Notify) {
-                    window.PW2Notify.success(`"${sub.name}" updated successfully`);
-                }
-            } catch (error) {
-                sub.lastError = error.message;
-                this.saveToStorage();
-                this.renderSubscriptions();
-
-                if (window.PW2Notify) {
-                    window.PW2Notify.error(`Failed to update "${sub.name}"`);
-                }
-            }
-        },
-
-        // Update all subscriptions
-        updateAll: async function () {
-            if (this.subscriptions.length === 0) {
-                if (window.PW2Notify) {
-                    window.PW2Notify.warning('No subscriptions to update');
-                }
-                return;
-            }
-
-            if (window.PW2Notify) {
-                window.PW2Notify.info(`Updating ${this.subscriptions.length} subscriptions...`);
-            }
-
-            for (let i = 0; i < this.subscriptions.length; i++) {
-                await this.updateSingle(i);
-                // Small delay between updates
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-
-            if (window.PW2Notify) {
-                window.PW2Notify.success('All subscriptions updated');
-            }
-        },
-
-        // Simulate update (replace with real API call)
-        simulateUpdate: async function (sub) {
-            return new Promise((resolve, reject) => {
-                setTimeout(() => {
-                    if (Math.random() > 0.1) { // 90% success rate
-                        const changes = {
-                            added: Math.floor(Math.random() * 10),
-                            removed: Math.floor(Math.random() * 5)
-                        };
-
-                        this.updateHistory.push({
-                            name: sub.name,
-                            timestamp: new Date().toISOString(),
-                            success: true,
-                            changes
-                        });
-
-                        sub.nodeCount = (sub.nodeCount || 0) + changes.added - changes.removed;
-                        resolve(changes);
-                    } else {
-                        this.updateHistory.push({
-                            name: sub.name,
-                            timestamp: new Date().toISOString(),
-                            success: false
-                        });
-                        reject(new Error('Connection failed'));
-                    }
-                }, 1000);
+            this.updateHistory.push({
+              name: sub.name,
+              timestamp: new Date().toISOString(),
+              success: true,
+              changes
             });
-        },
 
-        // Calculate next update time
-        calculateNextUpdate: function () {
-            const interval = parseInt(document.getElementById('auto-update-interval')?.value || 86400);
-            return new Date(Date.now() + interval * 1000).toISOString();
-        },
+            sub.nodeCount = (sub.nodeCount || 0) + changes.added - changes.removed;
+            resolve(changes);
+          } else {
+            this.updateHistory.push({
+              name: sub.name,
+              timestamp: new Date().toISOString(),
+              success: false
+            });
+            reject(new Error('Connection failed'));
+          }
+        }, 1000);
+      });
+    },
 
-        // Setup auto-update
-        setupAutoUpdate: function () {
-            const enabled = localStorage.getItem('pw2-auto-update-enabled') === 'true';
-            document.getElementById('auto-update-enabled').checked = enabled;
+    // Calculate next update time
+    calculateNextUpdate: function () {
+      const interval = parseInt(document.getElementById('auto-update-interval')?.value || 86400);
+      return new Date(Date.now() + interval * 1000).toISOString();
+    },
 
-            if (enabled) {
-                this.startAutoUpdate();
-            }
-        },
+    // Setup auto-update
+    setupAutoUpdate: function () {
+      const enabled = localStorage.getItem('pw2-auto-update-enabled') === 'true';
+      document.getElementById('auto-update-enabled').checked = enabled;
 
-        // Toggle auto-update
-        toggleAutoUpdate: function (enabled) {
-            localStorage.setItem('pw2-auto-update-enabled', enabled);
+      if (enabled) {
+        this.startAutoUpdate();
+      }
+    },
 
-            if (enabled) {
-                this.startAutoUpdate();
-                if (window.PW2Notify) {
-                    window.PW2Notify.success('Auto-update enabled');
-                }
-            } else {
-                this.stopAutoUpdate();
-                if (window.PW2Notify) {
-                    window.PW2Notify.info('Auto-update disabled');
-                }
-            }
-        },
+    // Toggle auto-update
+    toggleAutoUpdate: function (enabled) {
+      localStorage.setItem('pw2-auto-update-enabled', enabled);
 
-        // Start auto-update
-        startAutoUpdate: function () {
-            const interval = parseInt(document.getElementById('auto-update-interval')?.value || 86400);
-
-            this.autoUpdateInterval = setInterval(() => {
-                this.updateAll();
-            }, interval * 1000);
-        },
-
-        // Stop auto-update
-        stopAutoUpdate: function () {
-            if (this.autoUpdateInterval) {
-                clearInterval(this.autoUpdateInterval);
-                this.autoUpdateInterval = null;
-            }
-        },
-
-        // Set update interval
-        setUpdateInterval: function (interval) {
-            if (document.getElementById('auto-update-enabled').checked) {
-                this.stopAutoUpdate();
-                this.startAutoUpdate();
-            }
-        },
-
-        // Attach event listeners
-        attachEventListeners: function () {
-            // Any additional event listeners
-        },
-
-        // Cleanup
-        cleanup: function () {
-            this.stopAutoUpdate();
+      if (enabled) {
+        this.startAutoUpdate();
+        if (window.PW2Notify) {
+          window.PW2Notify.success('Auto-update enabled');
         }
-    };
+      } else {
+        this.stopAutoUpdate();
+        if (window.PW2Notify) {
+          window.PW2Notify.info('Auto-update disabled');
+        }
+      }
+    },
 
-    // Expose to global scope
-    window.PW2Subscriptions = SubscriptionManager;
+    // Start auto-update
+    startAutoUpdate: function () {
+      const interval = parseInt(document.getElementById('auto-update-interval')?.value || 86400);
 
-    // Auto-initialize when document is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => SubscriptionManager.init());
-    } else {
-        SubscriptionManager.init();
+      this.autoUpdateInterval = setInterval(() => {
+        this.updateAll();
+      }, interval * 1000);
+    },
+
+    // Stop auto-update
+    stopAutoUpdate: function () {
+      if (this.autoUpdateInterval) {
+        clearInterval(this.autoUpdateInterval);
+        this.autoUpdateInterval = null;
+      }
+    },
+
+    // Set update interval
+    setUpdateInterval: function (interval) {
+      if (document.getElementById('auto-update-enabled').checked) {
+        this.stopAutoUpdate();
+        this.startAutoUpdate();
+      }
+    },
+
+    // Attach event listeners
+    attachEventListeners: function () {
+      // Any additional event listeners
+    },
+
+    // Cleanup
+    cleanup: function () {
+      this.stopAutoUpdate();
     }
+  };
 
-    // Cleanup on page unload
-    window.addEventListener('beforeunload', () => {
-        SubscriptionManager.cleanup();
-    });
+  // Expose to global scope
+  window.PW2Subscriptions = SubscriptionManager;
+
+  // Auto-initialize when document is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => SubscriptionManager.init());
+  } else {
+    SubscriptionManager.init();
+  }
+
+  // Cleanup on page unload
+  window.addEventListener('beforeunload', () => {
+    SubscriptionManager.cleanup();
+  });
 
 })();
