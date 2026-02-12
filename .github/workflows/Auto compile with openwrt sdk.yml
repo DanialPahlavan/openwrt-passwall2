@@ -415,6 +415,8 @@ jobs:
           echo "CONFIG_LUCI_LANG_zh_Hant=y" >> .config
           echo "CONFIG_LUCI_LANG_fa=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-passwall2=m" >> .config
+          # Explicitly exclude all kernel modules (SDK doesn't have kernel source)
+          echo "# CONFIG_PACKAGE_kmod-gpio-button-hotplug is not set" >> .config
           make defconfig
           echo "make package/luci-app-passwall2/{clean,compile} -j$(nproc)"
           make package/luci-app-passwall2/{clean,compile} -j$(nproc) V=s || make package/luci-app-passwall2/{clean,compile} -j1 V=s
@@ -979,6 +981,8 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-passwall2_INCLUDE_SingBox=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-passwall2_INCLUDE_tuic_client=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-passwall2_INCLUDE_V2ray_Plugin=y" >> .config
+          # Explicitly exclude all kernel modules (SDK doesn't have kernel source)
+          echo "# CONFIG_PACKAGE_kmod-gpio-button-hotplug is not set" >> .config
 
           make defconfig
 
