@@ -435,6 +435,18 @@ jobs:
           fi
           echo "Config verified - no kernel packages enabled"
           
+          # NUCLEAR OPTION: Physically remove kernel package directories to prevent dependency resolution
+          echo "Removing kernel package directories from SDK..."
+          rm -rf package/kernel/linux 2>/dev/null || true
+          rm -rf package/kernel/kmod-* 2>/dev/null || true
+          rm -rf package/kernel/* 2>/dev/null || true
+          rm -rf package/base-files 2>/dev/null || true
+          rm -rf target/linux 2>/dev/null || true
+          # Remove problematic base feed packages
+          rm -rf feeds/base/package/kernel 2>/dev/null || true
+          rm -rf package/feeds/base/gpio-button-hotplug 2>/dev/null || true
+          echo "Kernel packages physically removed from build tree"
+          
           echo "make package/luci-app-passwall2/{clean,compile} -j$(nproc)"
           # Redirect output to log file while showing on terminal
           # Use IGNORE_ERRORS=m to skip unavailable packages
@@ -1050,6 +1062,18 @@ jobs:
             exit 1
           fi
           echo "Config verified - no kernel packages enabled"
+          
+          # NUCLEAR OPTION: Physically remove kernel package directories to prevent dependency resolution
+          echo "Removing kernel package directories from SDK..."
+          rm -rf package/kernel/linux 2>/dev/null || true
+          rm -rf package/kernel/kmod-* 2>/dev/null || true
+          rm -rf package/kernel/* 2>/dev/null || true
+          rm -rf package/base-files 2>/dev/null || true
+          rm -rf target/linux 2>/dev/null || true
+          # Remove problematic base feed packages
+          rm -rf feeds/base/package/kernel 2>/dev/null || true
+          rm -rf package/feeds/base/gpio-button-hotplug 2>/dev/null || true
+          echo "Kernel packages physically removed from build tree"
 
       - name: ${{ matrix.platform }} compile with parallelization
         if: steps.should_build.outputs.should_build == 'true' && steps.should_build_format.outputs.should_build == 'true'
