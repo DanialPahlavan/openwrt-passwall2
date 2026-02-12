@@ -296,6 +296,15 @@ jobs:
           cat feeds.conf.default
           echo "==================================="
 
+          # Force clean passwall2 feed to prevent cache conflicts
+          if [ -d "feeds/passwall2" ]; then
+            echo "Cleaning passwall2 feed to prevent Makefile conflicts..."
+            cd feeds/passwall2
+            git reset --hard HEAD
+            git clean -fd
+            cd ../..
+          fi
+
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
