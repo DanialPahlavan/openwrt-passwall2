@@ -11,7 +11,6 @@ local util = require "luci.util"
 local i18n = require "luci.i18n"
 local jsonc = require "luci.jsonc"
 local nixio = require "nixio"
-local ltn12 = require "ltn12"
 local fs = api.fs
 local sys = api.sys
 local jsonStringify = jsonc.stringify
@@ -245,10 +244,20 @@ end
 
 function M.backup_config()
 	local config_path = "/etc/config/passwall2"
-	local reader = ltn12.source.file(io.open(config_path, "r"))
 	http.header('Content-Disposition', 'attachment; filename="passwall2_backup.config"')
 	http.prepare_content("application/octet-stream")
-	ltn12.pump.all(reader, http.write)
+
+	-- Stream file content without ltn12
+	local fp = io.open(config_path, "r")
+	if fp then
+		local chunk_size = 4096
+		while true do
+			local chunk = fp:read(chunk_size)
+			if not chunk then break end
+			http.write(chunk)
+		end
+		fp:close()
+	end
 end
 
 function M.restore_config()

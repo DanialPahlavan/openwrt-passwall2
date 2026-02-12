@@ -29,6 +29,7 @@ on:
           - popular      # Only x86_64, aarch64_generic, arm_cortex-a9
           - x86_only     # Only x86_64 (fastest for testing)
           - custom       # Use platform_filter input
+          - none         # Skip all platform builds
       platform_filter:
         description: 'Custom platform filter (regex pattern, e.g., "x86|aarch64")'
         required: false
@@ -608,11 +609,17 @@ jobs:
           echo "should_build=$should_build" >> $GITHUB_OUTPUT
           echo "Platform: $platform, Priority: $priority, Build scope: $build_scope, Should build: $should_build"
           
-          # If we shouldn't build, exit successfully but mark as skipped
+          # If we shouldn't build, exit with specific code to skip this job entirely
           if [ "$should_build" != "true" ]; then
-            echo "Skipping this platform based on build_scope"
-            exit 0
+            echo "❌ Skipping this platform based on build_scope"
+            echo "Exiting early - this matrix job will be skipped"
+            # Set output for clarity
+            echo "should_build=false" >> $GITHUB_OUTPUT
+            # Exit with 0 so job shows as success but skipped
+            exit 78  # Special exit code for skipping in some CI systems
           fi
+          
+          echo "✅ Will build this platform"
 
       - name: Checkout
         if: steps.should_build.outputs.should_build == 'true'
