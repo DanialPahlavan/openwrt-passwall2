@@ -189,17 +189,41 @@ jobs:
         include:
           - ver: "ipk"
           - ver: "apk"
-        # Filter based on package_format input
-        exclude:
-          - ver: ${{ github.event.inputs.package_format == 'apk' && 'ipk' || 'NEVER_MATCH' }}
-          - ver: ${{ github.event.inputs.package_format == 'ipk' && 'apk' || 'NEVER_MATCH' }}
     steps:
+      - name: Check if should build this format
+        id: should_build_format
+        run: |
+          format_filter="${{ github.event.inputs.package_format }}"
+          current_format="${{ matrix.ver }}"
+          
+          # Default to 'both' if empty (repository_dispatch)
+          if [ -z "$format_filter" ]; then
+            format_filter="both"
+          fi
+          
+          should_build="true"
+          
+          # Check if this format should be built
+          if [ "$format_filter" == "ipk" ] && [ "$current_format" == "apk" ]; then
+            should_build="false"
+            echo "Skipping APK - only IPK selected"
+          elif [ "$format_filter" == "apk" ] && [ "$current_format" == "ipk" ]; then
+            should_build="false"
+            echo "Skipping IPK - only APK selected"
+          else
+            echo "Building $current_format (filter: $format_filter)"
+          fi
+          
+          echo "should_build=$should_build" >> $GITHUB_OUTPUT
+
       - name: Checkout
+        if: steps.should_build_format.outputs.should_build == 'true'
         uses: actions/checkout@main
         with:
           fetch-depth: 1
 
       - name: Install packages
+        if: steps.should_build_format.outputs.should_build == 'true'
         run: |
           sudo -E rm -rf /usr/share/dotnet /etc/mysql /etc/php /usr/local/lib/android
           echo "Install packages"
@@ -216,7 +240,7 @@ jobs:
           sudo -E apt-get -qq clean
 
       - name: Cache OpenWrt SDK
-        if: env.CACHE_ENABLED == 'true'
+        if: env.CACHE_ENABLED == 'true' && steps.should_build_format.outputs.should_build == 'true'
         id: cache-sdk
         uses: actions/cache@v4
         with:
@@ -229,7 +253,7 @@ jobs:
             openwrt-sdk-x86_64-${{ matrix.ver }}-
 
       - name: Initialization environment
-        if: steps.cache-sdk.outputs.cache-hit != 'true'
+        if: steps.cache-sdk.outputs.cache-hit != 'true' && steps.should_build_format.outputs.should_build == 'true'
         run: |
           url_sdk="https://downloads.openwrt.org/snapshots/targets/x86/64/openwrt-sdk-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst"
           wget --continue --progress=dot:giga $url_sdk || wget $url_sdk
@@ -245,6 +269,7 @@ jobs:
           fi
 
       - name: Update SDK feeds
+        if: steps.should_build_format.outputs.should_build == 'true'
         run: |
           cd sdk
 
@@ -306,6 +331,7 @@ jobs:
           grep -E "^PKG_VERSION|^PKG_RELEASE" Makefile
 
       - name: Apply patches
+        if: steps.should_build_format.outputs.should_build == 'true'
         run: |
           cd sdk
           #--------------------------------------begin_patches------------------------------------------
@@ -363,6 +389,7 @@ jobs:
           #--------------------------------------end_patches--------------------------------------------
 
       - name: Compile passwall2
+        if: steps.should_build_format.outputs.should_build == 'true'
         id: compile
         run: |
           cd sdk
@@ -449,7 +476,7 @@ jobs:
 
       - name: Upload passwall2 ipks to release
         uses: softprops/action-gh-release@v2
-        if: steps.compile.outputs.status == 'success'
+        if: steps.compile.outputs.status == 'success' && steps.should_build_format.outputs.should_build == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -649,12 +676,33 @@ jobs:
             ver: "apk"
             priority: low
 
-        # Filter based on package_format input
-        exclude:
-          - ver: ${{ github.event.inputs.package_format == 'apk' && 'ipk' || 'NEVER_MATCH' }}
-          - ver: ${{ github.event.inputs.package_format == 'ipk' && 'apk' || 'NEVER_MATCH' }}
-
     steps:
+      - name: Check if should build this format
+        id: should_build_format
+        run: |
+          format_filter="${{ github.event.inputs.package_format }}"
+          current_format="${{ matrix.ver }}"
+          
+          # Default to 'both' if empty (repository_dispatch)
+          if [ -z "$format_filter" ]; then
+            format_filter="both"
+          fi
+          
+          should_build="true"
+          
+          # Check if this format should be built
+          if [ "$format_filter" == "ipk" ] && [ "$current_format" == "apk" ]; then
+            should_build="false"
+            echo "Skipping APK - only IPK selected"
+          elif [ "$format_filter" == "apk" ] && [ "$current_format" == "ipk" ]; then
+            should_build="false"
+            echo "Skipping IPK - only APK selected"
+          else
+            echo "Building $current_format (filter: $format_filter)"
+          fi
+          
+          echo "should_build=$should_build" >> $GITHUB_OUTPUT
+
       - name: Check if should build this platform
         id: should_build
         run: |
@@ -708,13 +756,13 @@ jobs:
           fi
 
       - name: Checkout
-        if: steps.should_build.outputs.should_build == 'true'
+        if: steps.should_build.outputs.should_build == 'true' && steps.should_build_format.outputs.should_build == 'true'
         uses: actions/checkout@main
         with:
           fetch-depth: 1
 
       - name: Initialization ${{ matrix.platform }} compile environment
-        if: steps.should_build.outputs.should_build == 'true'
+        if: steps.should_build.outputs.should_build == 'true' && steps.should_build_format.outputs.should_build == 'true'
         run: |
           sudo -E rm -rf /usr/share/dotnet /etc/mysql /etc/php /usr/local/lib/android
           echo "Install packages"
@@ -731,7 +779,7 @@ jobs:
           sudo -E apt-get -qq clean
 
       - name: Cache OpenWrt SDK
-        if: env.CACHE_ENABLED == 'true' && steps.should_build.outputs.should_build == 'true'
+        if: env.CACHE_ENABLED == 'true' && steps.should_build.outputs.should_build == 'true' && steps.should_build_format.outputs.should_build == 'true'
         id: cache-sdk
         uses: actions/cache@v4
         with:
@@ -743,8 +791,8 @@ jobs:
           restore-keys: |
             openwrt-sdk-${{ matrix.platform }}-${{ matrix.ver }}-
 
-      - name: ${{ matrix.platform }} sdk download
-        if: steps.cache-sdk.outputs.cache-hit != 'true' && steps.should_build.outputs.should_build == 'true'
+      - name: SDK download
+        if: steps.cache-sdk.outputs.cache-hit != 'true' && steps.should_build.outputs.should_build == 'true' && steps.should_build_format.outputs.should_build == 'true'
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 15
@@ -767,7 +815,7 @@ jobs:
         if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
 
       - name: ${{ matrix.platform }} feeds configuration packages
-        if: steps.should_build.outputs.should_build == 'true'
+        if: steps.should_build.outputs.should_build == 'true' && steps.should_build_format.outputs.should_build == 'true'
         run: |
           cd sdk
           ver=${{ matrix.ver }}
@@ -804,7 +852,7 @@ jobs:
           ./scripts/feeds install -a
 
       - name: Update package version
-        if: github.event.inputs.version != '' && steps.should_build.outputs.should_build == 'true'
+        if: github.event.inputs.version != '' && steps.should_build.outputs.should_build == 'true' && steps.should_build_format.outputs.should_build == 'true'
         run: |
           cd sdk/feeds/passwall2/luci-app-passwall2
           version="${{ github.event.inputs.version }}"
@@ -833,7 +881,7 @@ jobs:
           grep -E "^PKG_VERSION|^PKG_RELEASE" Makefile
 
       - name: Apply patches
-        if: steps.should_build.outputs.should_build == 'true'
+        if: steps.should_build.outputs.should_build == 'true' && steps.should_build_format.outputs.should_build == 'true'
         run: |
           cd sdk
           #--------------------------------------begin_patches------------------------------------------
@@ -926,7 +974,7 @@ jobs:
           make defconfig
 
       - name: ${{ matrix.platform }} compile with parallelization
-        if: steps.should_build.outputs.should_build == 'true'
+        if: steps.should_build.outputs.should_build == 'true' && steps.should_build_format.outputs.should_build == 'true'
         id: compile
         run: |
           cd sdk
