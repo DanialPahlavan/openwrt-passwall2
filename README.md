@@ -19,18 +19,70 @@
     *   **Backup & Restore**: Easily migrate your configuration.
 *   **Multi-Language**: Built-in support for **English**, **Chinese (Simplified/Traditional)**, and **Persian (Farsi)**.
 
+## ⚙️ Requirements
+
+### Minimum System Requirements
+
+| Component | Requirement |
+|-----------|-------------|
+| **OpenWrt Version** | 24.x or later (Recommended: 24.10+) |
+| **Lua Runtime** | LuaJIT (Lua 5.1 compatible) |
+| **Architecture** | ARM, MIPS, x86_64, ARM64 |
+| **Free Storage** | ~5MB for base package + dependencies |
+| **RAM** | 128MB+ (256MB+ recommended) |
+
+### Core Dependencies
+
+PassWall 2 requires the following packages (automatically installed via `opkg`):
+
+**LuCI Framework:**
+- `luci-base` (>= 24.x)
+- `luci-compat` (for legacy support)
+- `luci-lib-jsonc`
+- `nixio`
+
+**Proxy Cores** (at least one required):
+- `xray-core` **OR** `sing-box` (recommended)
+- Optional: `hysteria`, `tuic-client`
+
+**Networking:**
+- `iptables-mod-tproxy` **OR** `nftables`
+- `ipset`
+- `dnsmasq-full` **OR** `dnsmasq` + `dnsmasq-extra`
+
+**Utilities:**
+- `wget-ssl` or `curl`
+- `ca-bundle` (for HTTPS subscriptions)
+- `unzip` (for GeoIP/GeoSite updates)
+
+### Optional Components
+
+- `haproxy` - For load balancing
+- `luci-app-firewall` - For advanced firewall rules
+- `chinadns-ng` - For DNS pollution mitigation
+
+---
+
 ## 📦 Installation
 
-1.  **Download**: Get the latest `.ipk` release from the [Releases](https://github.com/DanialPahlavan/openwrt-passwall2/releases) page.
-2.  **Upload**: Upload the file to your router (e.g., `/tmp/`).
-3.  **Install**:
-    ```bash
-    opkg update
-    opkg install /tmp/luci-app-passwall2*.ipk
-    ```
-4.  **Dependencies**: Ensure you have the core components installed (usually handled automatically):
-    *   `xray-core` or `sing-box`
-    *   `iptables-mod-tproxy` or `nftables`
+### Method 1: From Pre-built Release (Recommended)
+
+1. **Download**: Get the latest `.ipk` release from the [Releases](https://github.com/DanialPahlavan/openwrt-passwall2/releases) page.
+2. **Upload**: Upload the file to your router (e.g., `/tmp/`).
+3. **Install**:
+   ```bash
+   opkg update
+   opkg install /tmp/luci-app-passwall2*.ipk
+   ```
+
+### Method 2: Build from Source
+
+See the [Build Guide](doc/build.md) for detailed instructions on compiling from source.
+
+### Post-Installation
+
+After installation, the web interface will be available at:
+**LuCI > Services > PassWall 2**
 
 ## 🚀 Quick Start
 

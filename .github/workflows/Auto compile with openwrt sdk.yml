@@ -67,6 +67,8 @@ jobs:
       has_update: ${{ steps.check_version.outputs.has_update }}
       prerelease: ${{ steps.check_version.outputs.prerelease }}
       build_all_platforms: ${{ steps.check_version.outputs.build_all_platforms }}
+      build_scope: ${{ steps.check_version.outputs.build_scope }}
+      release_type: ${{ steps.check_version.outputs.release_type }}
     steps:
       - name: Checkout
         uses: actions/checkout@main
@@ -604,22 +606,22 @@ jobs:
                 should_build="true"
               fi
               ;;
+            "none")
+              # Explicitly set to false for 'none' scope
+              should_build="false"
+              ;;
           esac
           
           echo "should_build=$should_build" >> $GITHUB_OUTPUT
           echo "Platform: $platform, Priority: $priority, Build scope: $build_scope, Should build: $should_build"
           
-          # If we shouldn't build, exit with specific code to skip this job entirely
+          # If we shouldn't build, skip gracefully (don't exit with error)
           if [ "$should_build" != "true" ]; then
             echo "❌ Skipping this platform based on build_scope"
-            echo "Exiting early - this matrix job will be skipped"
-            # Set output for clarity
-            echo "should_build=false" >> $GITHUB_OUTPUT
-            # Exit with 0 so job shows as success but skipped
-            exit 78  # Special exit code for skipping in some CI systems
+            echo "This matrix job will be skipped gracefully"
+          else
+            echo "✅ Will build this platform"
           fi
-          
-          echo "✅ Will build this platform"
 
       - name: Checkout
         if: steps.should_build.outputs.should_build == 'true'
@@ -628,6 +630,7 @@ jobs:
           fetch-depth: 1
 
       - name: Initialization ${{ matrix.platform }} compile environment
+        if: steps.should_build.outputs.should_build == 'true'
         run: |
           sudo -E rm -rf /usr/share/dotnet /etc/mysql /etc/php /usr/local/lib/android
           echo "Install packages"
@@ -644,7 +647,7 @@ jobs:
           sudo -E apt-get -qq clean
 
       - name: Cache OpenWrt SDK
-        if: env.CACHE_ENABLED == 'true'
+        if: env.CACHE_ENABLED == 'true' && steps.should_build.outputs.should_build == 'true'
         id: cache-sdk
         uses: actions/cache@v4
         with:
@@ -657,7 +660,7 @@ jobs:
             openwrt-sdk-${{ matrix.platform }}-${{ matrix.ver }}-
 
       - name: ${{ matrix.platform }} sdk download
-        if: steps.cache-sdk.outputs.cache-hit != 'true'
+        if: steps.cache-sdk.outputs.cache-hit != 'true' && steps.should_build.outputs.should_build == 'true'
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 15
@@ -680,6 +683,7 @@ jobs:
         if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
 
       - name: ${{ matrix.platform }} feeds configuration packages
+        if: steps.should_build.outputs.should_build == 'true'
         run: |
           cd sdk
           ver=${{ matrix.ver }}
@@ -707,7 +711,7 @@ jobs:
           ./scripts/feeds install -a
 
       - name: Update package version
-        if: github.event.inputs.version != ''
+        if: github.event.inputs.version != '' && steps.should_build.outputs.should_build == 'true'
         run: |
           cd sdk/feeds/passwall2/luci-app-passwall2
           version="${{ github.event.inputs.version }}"
@@ -736,6 +740,7 @@ jobs:
           grep -E "^PKG_VERSION|^PKG_RELEASE" Makefile
 
       - name: Apply patches
+        if: steps.should_build.outputs.should_build == 'true'
         run: |
           cd sdk
           #--------------------------------------begin_patches------------------------------------------
@@ -828,6 +833,7 @@ jobs:
           make defconfig
 
       - name: ${{ matrix.platform }} compile with parallelization
+        if: steps.should_build.outputs.should_build == 'true'
         id: compile
         run: |
           cd sdk
