@@ -34,6 +34,15 @@ on:
         description: 'Custom platform filter (regex pattern, e.g., "x86|aarch64")'
         required: false
         default: ''
+      package_format:
+        description: 'Package format to build'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - both   # Build both IPK and APK
+          - ipk    # Build IPK only
+          - apk    # Build APK only
       enable_cache:
         description: 'Use caching to speed up builds?'
         required: false
@@ -180,6 +189,10 @@ jobs:
         include:
           - ver: "ipk"
           - ver: "apk"
+        # Filter based on package_format input
+        exclude:
+          - ver: ${{ github.event.inputs.package_format == 'apk' && 'ipk' || 'NEVER_MATCH' }}
+          - ver: ${{ github.event.inputs.package_format == 'ipk' && 'apk' || 'NEVER_MATCH' }}
     steps:
       - name: Checkout
         uses: actions/checkout@main
@@ -242,12 +255,21 @@ jobs:
               -e 's|git\.openwrt\.org/openwrt|github.com/openwrt|g' \
               "feeds.conf.default"
 
+          # Remove existing passwall feeds to avoid duplicates (from cache)
+          sed -i '/passwall_packages/d' feeds.conf.default
+          sed -i '/passwall2/d' feeds.conf.default
+
+          # Add passwall feeds at the beginning
           cat > feeds.tmp <<'EOF'
           src-git passwall_packages https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git;main
           src-git passwall2 https://github.com/${{ env.passwall2 }}.git;${{ github.ref_name }}
           EOF
           cat feeds.conf.default >> feeds.tmp
           mv feeds.tmp feeds.conf.default
+
+          echo "=== Final feeds.conf.default ==="
+          cat feeds.conf.default
+          echo "==================================="
 
           ./scripts/feeds update -a
           ./scripts/feeds install -a
@@ -366,6 +388,64 @@ jobs:
           cd upload
           echo "status=success" >> $GITHUB_OUTPUT
           echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+
+      - name: Generate build report
+        if: always()  # Run even if compile failed
+        run: |
+          REPORT_FILE="build_report_${{ matrix.ver }}.txt"
+          
+          cat > "$REPORT_FILE" <<'REPORT_EOF'
+          ==========================================
+          PassWall2 Build Report
+          ==========================================
+          
+          Job Name: ${{ github.job }}
+          Package Format: ${{ matrix.ver }}
+          Build Status: ${{ steps.compile.outputs.status || 'failed' }}
+          Build Time: ${{ github.run_id }}
+          Workflow Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          
+          === Build Configuration ===
+          Branch: ${{ github.ref_name }}
+          Version: ${{ needs.job_check.outputs.passwall2_version }}
+          Release Type: ${{ needs.job_check.outputs.release_type }}
+          Package Format: ${{ github.event.inputs.package_format || 'both' }}
+          Cache Enabled: ${{ env.CACHE_ENABLED }}
+          
+          === Build Environment ===
+          Runner OS: ubuntu-latest
+          Workflow: ${{ github.workflow }}
+          Event: ${{ github.event_name }}
+          
+          REPORT_EOF
+          
+          # Add compile status details
+          if [ "${{ steps.compile.outputs.status }}" == "success" ]; then
+            echo "" >> "$REPORT_FILE"
+            echo "=== Build Result: SUCCESS ===" >> "$REPORT_FILE"
+            echo "Packages built successfully" >> "$REPORT_FILE"
+            ls -lh upload/*.ipk 2>/dev/null | awk '{print $9, "-", $5}' >> "$REPORT_FILE" || true
+          else
+            echo "" >> "$REPORT_FILE"
+            echo "=== Build Result: FAILED ===" >> "$REPORT_FILE"
+            echo "Check logs above for errors" >> "$REPORT_FILE"
+          fi
+          
+          echo "" >> "$REPORT_FILE"
+          echo "==========================================End of Report==========================================" >> "$REPORT_FILE"
+          
+          cat "$REPORT_FILE"
+          mv "$REPORT_FILE" upload/ 2>/dev/null || mkdir -p build_reports && mv "$REPORT_FILE" build_reports/
+
+      - name: Upload build report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-report-passwall2-${{ matrix.ver }}
+          path: |
+            build_reports/*.txt
+            upload/*.txt
+          retention-days: 30
 
       - name: Upload passwall2 ipks to release
         uses: softprops/action-gh-release@v2
@@ -569,6 +649,10 @@ jobs:
             ver: "apk"
             priority: low
 
+        # Filter based on package_format input
+        exclude:
+          - ver: ${{ github.event.inputs.package_format == 'apk' && 'ipk' || 'NEVER_MATCH' }}
+          - ver: ${{ github.event.inputs.package_format == 'ipk' && 'apk' || 'NEVER_MATCH' }}
 
     steps:
       - name: Check if should build this platform
@@ -699,12 +783,21 @@ jobs:
               -e 's|git\.openwrt\.org/openwrt|github.com/openwrt|g' \
               "feeds.conf.default"
 
+          # Remove existing passwall feeds to avoid duplicates (from cache)
+          sed -i '/passwall_packages/d' feeds.conf.default
+          sed -i '/passwall2/d' feeds.conf.default
+
+          # Add passwall feeds at the beginning
           cat > feeds.tmp <<'EOF'
           src-git passwall_packages https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git;main
           src-git passwall2 https://github.com/${{ env.passwall2 }}.git;${{ github.ref_name }}
           EOF
           cat feeds.conf.default >> feeds.tmp
           mv feeds.tmp feeds.conf.default
+
+          echo "=== Final feeds.conf.default ==="
+          cat feeds.conf.default
+          echo "==================================="
 
 
           ./scripts/feeds update -a
@@ -890,6 +983,79 @@ jobs:
 
           echo "FIRMWARE=$PWD" >> $GITHUB_ENV
           echo "status=success" >> $GITHUB_OUTPUT
+
+      - name: Generate build report
+        if: always()  # Run even if compile failed
+        run: |
+          REPORT_FILE="build_report_${{ matrix.platform }}_${{ matrix.ver }}.txt"
+          
+          cat > "$REPORT_FILE" <<'REPORT_EOF'
+          ==========================================
+          PassWall2 Platform Build Report
+          ==========================================
+          
+          Job Name: ${{ github.job }}
+          Platform: ${{ matrix.platform }}
+          Package Format: ${{ matrix.ver }}
+          Priority: ${{ matrix.priority }}
+          Build Status: ${{ steps.compile.outputs.status || 'failed' }}
+          Workflow Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          
+          === Build Configuration ===
+          Branch: ${{ github.ref_name }}
+          Version: ${{ needs.job_check.outputs.passwall2_version }}
+          Release Type: ${{ needs.job_check.outputs.release_type }}
+          Build Scope: ${{ github.event.inputs.build_scope || 'all' }}
+          Package Format Filter: ${{ github.event.inputs.package_format || 'both' }}
+          Cache Enabled: ${{ env.CACHE_ENABLED }}
+          SDK URL: ${{ matrix.url_sdk }}
+          
+          === Build Environment ===
+          Runner OS: ubuntu-latest
+          Workflow: ${{ github.workflow }}
+          Event: ${{ github.event_name }}
+          
+          REPORT_EOF
+          
+          # Add platform filtering status
+          if [ "${{ steps.should_build.outputs.should_build }}" == "true" ]; then
+            echo "" >> "$REPORT_FILE"
+            echo "=== Platform Build Status ===" >> "$REPORT_FILE"
+            echo "This platform was built according to build_scope filter" >> "$REPORT_FILE"
+            
+            if [ "${{ steps.compile.outputs.status }}" == "success" ]; then
+              echo "" >> "$REPORT_FILE"
+              echo "=== Build Result: SUCCESS ===" >> "$REPORT_FILE"
+              echo "Packages compiled successfully" >> "$REPORT_FILE"
+              echo "" >> "$REPORT_FILE"
+              echo "Generated package:" >> "$REPORT_FILE"
+              ls -lh upload/*.zip 2>/dev/null | awk '{print $9, "-", $5}' >> "$REPORT_FILE" || echo "No ZIP file found" >> "$REPORT_FILE"
+            else
+              echo "" >> "$REPORT_FILE"
+              echo "=== Build Result: FAILED ===" >> "$REPORT_FILE"
+              echo "Check workflow logs for detailed error messages" >> "$REPORT_FILE"
+            fi
+          else
+            echo "" >> "$REPORT_FILE"
+            echo "=== Platform Build Status ===" >> "$REPORT_FILE"
+            echo "This platform was SKIPPED by build_scope filter" >> "$REPORT_FILE"
+            echo "Build scope: ${{ github.event.inputs.build_scope || 'all' }}" >> "$REPORT_FILE"
+          fi
+          
+          echo "" >> "$REPORT_FILE"
+          echo "==========================================End of Report==========================================" >> "$REPORT_FILE"
+          
+          cat "$REPORT_FILE"
+          mkdir -p build_reports
+          mv "$REPORT_FILE" build_reports/
+
+      - name: Upload build report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-report-${{ matrix.platform }}-${{ matrix.ver }}
+          path: build_reports/*.txt
+          retention-days: 30
 
       - name: Upload failed build logs
         if: failure()
