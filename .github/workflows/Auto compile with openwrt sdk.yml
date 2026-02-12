@@ -420,7 +420,9 @@ jobs:
           sed -i  '/^CONFIG_PACKAGE_kernel=/s/^CONFIG_\(.*\)=.*/# CONFIG_\1 is not set/' .config
           sed -i '/^CONFIG_PACKAGE_kmod-/s/^CONFIG_\(.*\)=.*/# CONFIG_\1 is not set/' .config
           echo "make package/luci-app-passwall2/{clean,compile} -j$(nproc)"
-          make package/luci-app-passwall2/{clean,compile} -j$(nproc) V=s || make package/luci-app-passwall2/{clean,compile} -j1 V=s
+          # Redirect output to log file while showing on terminal
+          make package/luci-app-passwall2/{clean,compile} -j$(nproc) V=s 2>&1 | tee "${{ github.workspace }}/build.log" || \
+          make package/luci-app-passwall2/{clean,compile} -j1 V=s 2>&1 | tee "${{ github.workspace }}/build.log"
           mkdir upload
           mv bin/packages/*/passwall2/luci-* upload/
           make clean
@@ -463,11 +465,40 @@ jobs:
             echo "" >> "$REPORT_FILE"
             echo "=== Build Result: SUCCESS ===" >> "$REPORT_FILE"
             echo "Packages built successfully" >> "$REPORT_FILE"
-            ls -lh upload/*.ipk 2>/dev/null | awk '{print $9, "-", $5}' >> "$REPORT_FILE" || true
+            echo "" >> "$REPORT_FILE"
+            echo "Built packages:" >> "$REPORT_FILE"
+            ls -lh upload/*.ipk 2>/dev/null | awk '{print "  ", $9, "-", $5}' >> "$REPORT_FILE" || echo "  No packages found" >> "$REPORT_FILE"
           else
             echo "" >> "$REPORT_FILE"
             echo "=== Build Result: FAILED ===" >> "$REPORT_FILE"
-            echo "Check logs above for errors" >> "$REPORT_FILE"
+            echo "" >> "$REPORT_FILE"
+            
+            # Capture last 100 lines of build output for error analysis
+            if [ -f "${{ github.workspace }}/build.log" ]; then
+              echo "=== Last 100 Lines of Build Output ===" >> "$REPORT_FILE"
+              tail -n 100 "${{ github.workspace }}/build.log" >> "$REPORT_FILE"
+              echo "" >> "$REPORT_FILE"
+              
+              # Extract ERROR lines
+              echo "=== Extracted ERROR Messages ===" >> "$REPORT_FILE"
+              grep -i "error:" "${{ github.workspace }}/build.log" | tail -n 20 >> "$REPORT_FILE" || echo "  No explicit error messages found" >> "$REPORT_FILE"
+              echo "" >> "$REPORT_FILE"
+              
+              # Extract make failures
+              echo "=== Make Failures ===" >> "$REPORT_FILE"
+              grep "make\[.*\]: \*\*\*" "${{ github.workspace }}/build.log" | tail -n 10 >> "$REPORT_FILE" || echo "  No make failures found" >> "$REPORT_FILE"
+              echo "" >> "$REPORT_FILE"
+              
+              # Count warnings
+              WARNING_COUNT=$(grep -c "warning:" "${{ github.workspace }}/build.log" 2>/dev/null || echo "0")
+              echo "=== Build Statistics ===" >> "$REPORT_FILE"
+              echo "  Total warnings: $WARNING_COUNT" >> "$REPORT_FILE"
+            else
+              echo "Build log not found - compilation may have failed early" >> "$REPORT_FILE"
+            fi
+            
+            echo "" >> "$REPORT_FILE"
+            echo "Tip: Check GitHub Actions logs for complete build output" >> "$REPORT_FILE"
           fi
           
           echo "" >> "$REPORT_FILE"
@@ -1009,7 +1040,8 @@ jobs:
           for package in ${{ env.package_names }}; do
             if [ -d "feeds/passwall_packages/$package" ] && ! [[ "$package" =~ ^(chinadns-ng|geoview)$ ]]; then
               echo "-----------begin compile $package ---------------"
-              make package/$package/compile -j$(nproc) V=s || make package/$package/compile -j1 V=s
+              make package/$package/compile -j$(nproc) V=s 2>&1 | tee -a "${{ github.workspace }}/build_${{ matrix.platform }}_${{ matrix.ver }}.log" || \
+              make package/$package/compile -j1 V=s 2>&1 | tee -a "${{ github.workspace }}/build_${{ matrix.platform }}_${{ matrix.ver }}.log"
               echo "-----------compiled $package ---------------"
             fi
           done
@@ -1092,11 +1124,38 @@ jobs:
               echo "Packages compiled successfully" >> "$REPORT_FILE"
               echo "" >> "$REPORT_FILE"
               echo "Generated package:" >> "$REPORT_FILE"
-              ls -lh upload/*.zip 2>/dev/null | awk '{print $9, "-", $5}' >> "$REPORT_FILE" || echo "No ZIP file found" >> "$REPORT_FILE"
+              ls -lh upload/*.zip 2>/dev/null | awk '{print "  ", $9, "-", $5}' >> "$REPORT_FILE" || echo "  No ZIP file found" >> "$REPORT_FILE"
             else
               echo "" >> "$REPORT_FILE"
               echo "=== Build Result: FAILED ===" >> "$REPORT_FILE"
-              echo "Check workflow logs for detailed error messages" >> "$REPORT_FILE"
+              echo "" >> "$REPORT_FILE"
+              
+              # Capture last 100 lines of build output for error analysis
+              if [ -f "${{ github.workspace }}/build_${{ matrix.platform }}_${{ matrix.ver }}.log" ]; then
+                echo "=== Last 100 Lines of Build Output ===" >> "$REPORT_FILE"
+                tail -n 100 "${{ github.workspace }}/build_${{ matrix.platform }}_${{ matrix.ver }}.log" >> "$REPORT_FILE"
+                echo "" >> "$REPORT_FILE"
+                
+                # Extract ERROR lines
+                echo "=== Extracted ERROR Messages ===" >> "$REPORT_FILE"
+                grep -i "error:" "${{ github.workspace }}/build_${{ matrix.platform }}_${{ matrix.ver }}.log" | tail -n 20 >> "$REPORT_FILE" || echo "  No explicit error messages found" >> "$REPORT_FILE"
+                echo "" >> "$REPORT_FILE"
+                
+                # Extract make failures
+                echo "=== Make Failures ===" >> "$REPORT_FILE"
+                grep "make\[.*\]: \*\*\*" "${{ github.workspace }}/build_${{ matrix.platform }}_${{ matrix.ver }}.log" | tail -n 10 >> "$REPORT_FILE" || echo "  No make failures found" >> "$REPORT_FILE"
+                echo "" >> "$REPORT_FILE"
+                
+                # Count warnings
+                WARNING_COUNT=$(grep -c "warning:" "${{ github.workspace }}/build_${{ matrix.platform }}_${{ matrix.ver }}.log" 2>/dev/null || echo "0")
+                echo "=== Build Statistics ===" >> "$REPORT_FILE"
+                echo "  Total warnings: $WARNING_COUNT" >> "$REPORT_FILE"
+              else
+                echo "Build log not found - compilation may have failed early" >> "$REPORT_FILE"
+              fi
+              
+              echo "" >> "$REPORT_FILE"
+              echo "Tip: Check GitHub Actions logs for complete build output" >> "$REPORT_FILE"
             fi
           else
             echo "" >> "$REPORT_FILE"
