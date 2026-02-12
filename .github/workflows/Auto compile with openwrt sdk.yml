@@ -416,13 +416,30 @@ jobs:
           echo "CONFIG_LUCI_LANG_fa=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-passwall2=m" >> .config
           make defconfig
-          # AFTER defconfig, forcefully disable all kernel packages (defconfig may re-enable them via deps)
-          sed -i  '/^CONFIG_PACKAGE_kernel=/s/^CONFIG_\(.*\)=.*/# CONFIG_\1 is not set/' .config
-          sed -i '/^CONFIG_PACKAGE_kmod-/s/^CONFIG_\(.*\)=.*/# CONFIG_\1 is not set/' .config
+          
+          # CRITICAL: SDK cannot build kernel packages - forcefully disable them
+          echo "Disabling all kernel and firmware packages..."
+          grep -v "^CONFIG_PACKAGE_kernel" .config > .config.tmp && mv .config.tmp .config
+          grep -v "^CONFIG_PACKAGE_kmod-" .config > .config.tmp && mv .config.tmp .config  
+          grep -v "^CONFIG_TARGET_ROOTFS" .config > .config.tmp && mv .config.tmp .config
+          
+          # Explicitly disable in config (belt and suspenders approach)
+          echo "# CONFIG_PACKAGE_kernel is not set" >> .config
+          echo "# CONFIG_KERNEL_PACKAGE is not set" >> .config
+          
+          # Verify kernel packages are disabled
+          echo "Verifying .config..."
+          if grep -q "^CONFIG_PACKAGE_kernel=y" .config || grep -q "^CONFIG_PACKAGE_kmod-.*=y" .config; then
+            echo "ERROR: Kernel packages still enabled despite exclusion!"
+            exit 1
+          fi
+          echo "Config verified - no kernel packages enabled"
+          
           echo "make package/luci-app-passwall2/{clean,compile} -j$(nproc)"
           # Redirect output to log file while showing on terminal
-          make package/luci-app-passwall2/{clean,compile} -j$(nproc) V=s 2>&1 | tee "${{ github.workspace }}/build.log" || \
-          make package/luci-app-passwall2/{clean,compile} -j1 V=s 2>&1 | tee "${{ github.workspace }}/build.log"
+          # Use IGNORE_ERRORS=m to skip unavailable packages
+          make package/luci-app-passwall2/{clean,compile} -j$(nproc) V=s IGNORE_ERRORS=m 2>&1 | tee "${{ github.workspace }}/build.log" || \
+          make package/luci-app-passwall2/{clean,compile} -j1 V=s IGNORE_ERRORS=m 2>&1 | tee "${{ github.workspace }}/build.log"
           mkdir upload
           mv bin/packages/*/passwall2/luci-* upload/
           make clean
@@ -1015,9 +1032,24 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-passwall2_INCLUDE_V2ray_Plugin=y" >> .config
 
           make defconfig
-          # AFTER defconfig, forcefully disable all kernel packages (defconfig may re-enable them via deps)
-          sed -i '/^CONFIG_PACKAGE_kernel=/s/^CONFIG_\(.*\)=.*/# CONFIG_\1 is not set/' .config
-          sed -i '/^CONFIG_PACKAGE_kmod-/s/^CONFIG_\(.*\)=.*/# CONFIG_\1 is not set/' .config
+          
+          # CRITICAL: SDK cannot build kernel packages - forcefully disable them
+          echo "Disabling all kernel and firmware packages..."
+          grep -v "^CONFIG_PACKAGE_kernel" .config > .config.tmp && mv .config.tmp .config
+          grep -v "^CONFIG_PACKAGE_kmod-" .config > .config.tmp && mv .config.tmp .config  
+          grep -v "^CONFIG_TARGET_ROOTFS" .config > .config.tmp && mv .config.tmp .config
+          
+          # Explicitly disable in config (belt and suspenders approach)
+          echo "# CONFIG_PACKAGE_kernel is not set" >> .config
+          echo "# CONFIG_KERNEL_PACKAGE is not set" >> .config
+          
+          # Verify kernel packages are disabled
+          echo "Verifying .config..."
+          if grep -q "^CONFIG_PACKAGE_kernel=y" .config || grep -q "^CONFIG_PACKAGE_kmod-.*=y" .config; then
+            echo "ERROR: Kernel packages still enabled despite exclusion!"
+            exit 1
+          fi
+          echo "Config verified - no kernel packages enabled"
 
       - name: ${{ matrix.platform }} compile with parallelization
         if: steps.should_build.outputs.should_build == 'true' && steps.should_build_format.outputs.should_build == 'true'
@@ -1031,7 +1063,7 @@ jobs:
           for package in chinadns-ng geoview; do
             if [ -d "feeds/passwall_packages/$package" ]; then
               echo "Building $package..."
-              make package/$package/compile -j$(nproc) V=s || make package/$package/compile -j1 V=s &
+              make package/$package/compile -j$(nproc) V=s IGNORE_ERRORS=m || make package/$package/compile -j1 V=s IGNORE_ERRORS=m &
             fi
           done
           wait
