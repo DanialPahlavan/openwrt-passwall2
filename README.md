@@ -1,10 +1,11 @@
-# OpenWrt PassWall 3 Beta 🚀
+# OpenWrt PassWall 3 Beta ⚠️
 
 **PassWall 3 Beta** is the next evolution of PassWall 2, featuring advanced UI modernization, intelligent features, and optimizations specifically designed for users in restricted regions. Built on proven PassWall 2 foundations with modern enhancements for better performance, usability, and resource efficiency.
 
-## ⚠️ Beta Notice
+## ⚠️⚠️⚠️⚠️⚠️⚠️ Danger Notice ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
 
-**This is a Beta release.** While stable, it includes new features that are being actively tested. Error logging is built-in to help improve the software. See [Error Reporting](#-error-reporting-beta-feature) for details.
+**This is a Beta release.** dont install in your router , its for testing in vmware openwrt for Devs , it includes new features that are being actively tested. Error logging is built-in to help improve the software. See [Error Reporting](#-error-reporting-beta-feature) for details.
+it Include Hypecoding features for playground new feature testings and sandbox for testing new codes while get idea how implement it manually with devs . 
 
 ---
 
@@ -268,9 +269,6 @@ cat /tmp/passwall3/logs/error.log
 Full documentation is available:
 
 *   [PassWall 3 Beta Features](PASSWALL3_BETA.md) - Detailed feature guide
-*   [Tier 1 Implementation](TIER1_IMPLEMENTATION.md) - Design system & components
-*   [Tier 2 Implementation](TIER2_IMPLEMENTATION.md) - Real-time features & PWA
-*   [Tier 3 Implementation](TIER3_IMPLEMENTATION.md) - Premium features
 *   [FAQ](doc/faq.md)
 
 ---
