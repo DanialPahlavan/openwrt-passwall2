@@ -1,0 +1,654 @@
+/**
+ * PassWall2 Component Library
+ * Reusable UI components for consistent design
+ */
+
+/* ============================================
+   CARDS
+   ============================================ */
+
+.pw-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: var(--space-6);
+    transition: all var(--transition-base);
+}
+
+.pw-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.pw-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.pw-card-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.pw-card-body {
+    color: var(--text-secondary);
+}
+
+.pw-card-footer {
+    margin-top: var(--space-4);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Card Variants */
+.pw-card-compact {
+    padding: var(--space-4);
+}
+
+.pw-card-bordered {
+    border: 2px solid var(--border-color);
+}
+
+.pw-card-elevated {
+    box-shadow: var(--shadow-xl);
+}
+
+/* Status Cards */
+.pw-status-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-base);
+}
+
+.pw-status-card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.pw-status-card-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-2xl);
+    flex-shrink: 0;
+}
+
+.pw-status-card-icon.success {
+    background: var(--color-success-light);
+    color: var(--color-success);
+}
+
+.pw-status-card-icon.warning {
+    background: var(--color-warning-light);
+    color: var(--color-warning);
+}
+
+.pw-status-card-icon.error {
+    background: var(--color-error-light);
+    color: var(--color-error);
+}
+
+.pw-status-card-icon.info {
+    background: var(--color-info-light);
+    color: var(--color-info);
+}
+
+.pw-status-card-content {
+    flex: 1;
+}
+
+.pw-status-card-label {
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--space-1);
+}
+
+.pw-status-card-value {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+}
+
+.pw-status-card-meta {
+    font-size: var(--font-size-sm);
+    color: var(--text-tertiary);
+    margin-top: var(--space-1);
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+
+.pw-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-tight);
+    text-align: center;
+    text-decoration: none;
+    white-space: nowrap;
+    vertical-align: middle;
+    cursor: pointer;
+    user-select: none;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+    background: transparent;
+}
+
+.pw-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.pw-btn:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+}
+
+.pw-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Button Variants */
+.pw-btn-primary {
+    background: var(--color-primary);
+    color: #ffffff;
+    border-color: var(--color-primary);
+}
+
+.pw-btn-primary:hover {
+    background: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
+}
+
+.pw-btn-success {
+    background: var(--color-success);
+    color: #ffffff;
+    border-color: var(--color-success);
+}
+
+.pw-btn-warning {
+    background: var(--color-warning);
+    color: #ffffff;
+    border-color: var(--color-warning);
+}
+
+.pw-btn-error {
+    background: var(--color-error);
+    color: #ffffff;
+    border-color: var(--color-error);
+}
+
+.pw-btn-outline {
+    background: transparent;
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.pw-btn-outline:hover {
+    background: var(--color-primary);
+    color: #ffffff;
+}
+
+.pw-btn-ghost {
+    background: transparent;
+    color: var(--text-primary);
+    border-color: transparent;
+}
+
+.pw-btn-ghost:hover {
+    background: var(--hover-bg);
+}
+
+/* Button Sizes */
+.pw-btn-sm {
+    padding: var(--space-1) var(--space-3);
+    font-size: var(--font-size-xs);
+}
+
+.pw-btn-lg {
+    padding: var(--space-3) var(--space-6);
+    font-size: var(--font-size-base);
+}
+
+.pw-btn-icon {
+    padding: var(--space-2);
+    width: 32px;
+    height: 32px;
+}
+
+/* ============================================
+   BADGES
+   ============================================ */
+
+.pw-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    line-height: 1;
+    border-radius: var(--radius-full);
+    white-space: nowrap;
+}
+
+.pw-badge-success {
+    background: var(--color-success-light);
+    color: var(--color-success);
+}
+
+.pw-badge-warning {
+    background: var(--color-warning-light);
+    color: var(--color-warning);
+}
+
+.pw-badge-error {
+    background: var(--color-error-light);
+    color: var(--color-error);
+}
+
+.pw-badge-info {
+    background: var(--color-info-light);
+    color: var(--color-info);
+}
+
+.pw-badge-neutral {
+    background: var(--color-gray-200);
+    color: var(--text-secondary);
+}
+
+/* Badge with dot indicator */
+.pw-badge-dot::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: currentColor;
+}
+
+/* ============================================
+   ALERTS
+   ============================================ */
+
+.pw-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border: 1px solid;
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-4);
+}
+
+.pw-alert-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pw-alert-content {
+    flex: 1;
+}
+
+.pw-alert-title {
+    font-weight: var(--font-weight-semibold);
+    margin-bottom: var(--space-1);
+}
+
+.pw-alert-description {
+    font-size: var(--font-size-sm);
+}
+
+.pw-alert-success {
+    background: var(--color-success-light);
+    border-color: var(--color-success);
+    color: var(--color-success);
+}
+
+.pw-alert-warning {
+    background: var(--color-warning-light);
+    border-color: var(--color-warning);
+    color: var(--color-warning);
+}
+
+.pw-alert-error {
+    background: var(--color-error-light);
+    border-color: var(--color-error);
+    color: var(--color-error);
+}
+
+.pw-alert-info {
+    background: var(--color-info-light);
+    border-color: var(--color-info);
+    color: var(--color-info);
+}
+
+/* ============================================
+   FORMS
+   ============================================ */
+
+.pw-input {
+    display: block;
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-normal);
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+    background-clip: padding-box;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.pw-input:focus {
+    outline: 0;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+.pw-input:disabled {
+    background-color: var(--bg-tertiary);
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.pw-input-error {
+    border-color: var(--color-error);
+}
+
+.pw-input-error:focus {
+    border-color: var(--color-error);
+    box-shadow: 0 0 0 3px var(--color-error-light);
+}
+
+.pw-select {
+    display: block;
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-normal);
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.pw-select:focus {
+    outline: 0;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+/* Toggle Switch */
+.pw-toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+.pw-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.pw-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--color-gray-400);
+    transition: var(--transition-base);
+    border-radius: var(--radius-full);
+}
+
+.pw-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: var(--transition-base);
+    border-radius: var(--radius-full);
+}
+
+.pw-toggle input:checked+.pw-toggle-slider {
+    background-color: var(--color-primary);
+}
+
+.pw-toggle input:checked+.pw-toggle-slider:before {
+    transform: translateX(20px);
+}
+
+.pw-toggle input:focus+.pw-toggle-slider {
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+/* ============================================
+   LOADING STATES
+   ============================================ */
+
+/* Spinner */
+.pw-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--color-primary);
+    border-radius: var(--radius-full);
+    animation: pw-spin 0.6s linear infinite;
+}
+
+@keyframes pw-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.pw-spinner-lg {
+    width: 32px;
+    height: 32px;
+    border-width: 3px;
+}
+
+/* Skeleton */
+.pw-skeleton {
+    display: block;
+    background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+    background-size: 200% 100%;
+    animation: pw-skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: var(--radius-md);
+}
+
+@keyframes pw-skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.pw-skeleton-text {
+    height: 1em;
+    margin-bottom: var(--space-2);
+}
+
+.pw-skeleton-circle {
+    border-radius: var(--radius-full);
+}
+
+/* ============================================
+   EMPTY STATES
+   ============================================ */
+
+.pw-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-12);
+    text-align: center;
+}
+
+.pw-empty-state-icon {
+    width: 64px;
+    height: 64px;
+    margin-bottom: var(--space-4);
+    color: var(--text-tertiary);
+    opacity: 0.5;
+}
+
+.pw-empty-state-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--space-2);
+}
+
+.pw-empty-state-description {
+    font-size: var(--font-size-sm);
+    color: var(--text-tertiary);
+    max-width: 400px;
+    margin-bottom: var(--space-4);
+}
+
+/* ============================================
+   GRID LAYOUTS
+   ============================================ */
+
+.pw-grid {
+    display: grid;
+    gap: var(--space-4);
+}
+
+.pw-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.pw-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.pw-grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 1024px) {
+    .pw-grid-3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .pw-grid-4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+
+    .pw-grid-2,
+    .pw-grid-3,
+    .pw-grid-4 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================
+   DIVIDER
+   ============================================ */
+
+.pw-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: var(--space-4) 0;
+    border: none;
+}
+
+.pw-divider-vertical {
+    width: 1px;
+    height: 100%;
+    background: var(--border-color);
+    margin: 0 var(--space-4);
+}
+
+/* ============================================
+   STATS/METRICS
+   ============================================ */
+
+.pw-stat {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.pw-stat-label {
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.pw-stat-value {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    line-height: var(--line-height-tight);
+}
+
+.pw-stat-change {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+}
+
+.pw-stat-change.positive {
+    color: var(--color-success);
+}
+
+.pw-stat-change.negative {
+    color: var(--color-error);
+}
