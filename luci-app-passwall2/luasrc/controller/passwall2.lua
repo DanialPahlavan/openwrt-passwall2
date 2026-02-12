@@ -2,16 +2,20 @@
 local M = {}
 
 -- Import the newmodular controller
-local main_controller = require "luci.passwall2.controller.main"
+local main_controller = require "luci.controller.main"
 local api = require "luci.passwall2.api"
 local appname = api.appname
 local uci = api.uci
 local http = require "luci.http"
 local util = require "luci.util"
 local i18n = require "luci.i18n"
+local jsonc = require "luci.jsonc"
+local nixio = require "nixio"
+local ltn12 = require "ltn12"
 local fs = api.fs
-local jsonStringify = luci.jsonc.stringify
-local jsonParse = luci.jsonc.parse
+local sys = api.sys
+local jsonStringify = jsonc.stringify
+local jsonParse = jsonc.parse
 
 function M.index()
 	-- Use the new modular controller's index function
@@ -24,8 +28,8 @@ end
 function M.server_user_status()
 	local e = {}
 	e.index = http.formvalue("index")
-	e.status = luci.sys.call(string.format(
-	"/bin/busybox top -bn1 | grep -v 'grep' | grep '%s/bin/' | grep -i '%s' >/dev/null", appname .. "_server",
+	e.status = sys.call(string.format(
+		"/bin/busybox top -bn1 | grep -v 'grep' | grep '%s/bin/' | grep -i '%s' >/dev/null", appname .. "_server",
 		http.formvalue("id"))) == 0
 	main_controller.http_write_json(e)
 end
@@ -33,7 +37,7 @@ end
 function M.server_user_log()
 	local id = http.formvalue("id")
 	if nixio.fs.access("/tmp/etc/passwall2_server/" .. id .. ".log") then
-		local content = luci.sys.exec("cat /tmp/etc/passwall2_server/" .. id .. ".log")
+		local content = sys.exec("cat /tmp/etc/passwall2_server/" .. id .. ".log")
 		content = content:gsub("\n", "<br />")
 		http.write(content)
 	else
@@ -42,11 +46,11 @@ function M.server_user_log()
 end
 
 function M.server_get_log()
-	http.write(luci.sys.exec("[ -f '/tmp/log/passwall2_server.log' ] && cat /tmp/log/passwall2_server.log"))
+	http.write(sys.exec("[ -f '/tmp/log/passwall2_server.log' ] && cat /tmp/log/passwall2_server.log"))
 end
 
 function M.server_clear_log()
-	luci.sys.call("echo '' > /tmp/log/passwall2_server.log")
+	sys.call("echo '' > /tmp/log/passwall2_server.log")
 end
 
 function M.app_check()
@@ -134,8 +138,8 @@ function M.restore_backup()
 				end
 				api.log(0, string.format(" * PassWall2 %s", i18n.translate("Configuration restored successfully…")))
 				api.log(0, string.format(" * PassWall2 %s", i18n.translate("Service restarting…")))
-				luci.sys.call('/etc/init.d/passwall2 restart > /dev/null 2>&1 &')
-				luci.sys.call('/etc/init.d/passwall2_server restart > /dev/null 2>&1 &')
+				sys.call('/etc/init.d/passwall2 restart > /dev/null 2>&1 &')
+				sys.call('/etc/init.d/passwall2_server restart > /dev/null 2>&1 &')
 				result = { status = "success", message = "Upload completed", path = file_path }
 			else
 				api.log(0,
@@ -195,7 +199,7 @@ function M.geo_view()
 		end
 		cmd = string.format("geoview -type %s -action lookup -input '%s' -value '%s' -lowmem=true", geo_type, file_path,
 			value)
-		geo_string = luci.sys.exec(cmd):lower()
+		geo_string = sys.exec(cmd):lower()
 		if geo_string ~= "" then
 			local lines, rules, seen = {}, {}, {}
 			for line in geo_string:gmatch("([^\n]+)") do
@@ -228,7 +232,7 @@ function M.geo_view()
 			file_path = (geo_type == "geoip") and geoip_path or geosite_path
 			cmd = string.format("geoview -type %s -action extract -input '%s' -list '%s' -lowmem=true", geo_type,
 				file_path, list)
-			geo_string = luci.sys.exec(cmd)
+			geo_string = sys.exec(cmd)
 		end
 	end
 	http.prepare_content("text/plain")
@@ -257,12 +261,12 @@ function M.clear_dns_cache()
 	-- Flush DNS cache logic (e.g. reload dnsmasq or flush ipset)
 	-- Passwall usually handles this on restart/reload, but we can try specific commands.
 	-- For now, allow simple restart of DNS helper or full reload.
-	luci.sys.call("/etc/init.d/dnsmasq restart")
+	sys.call("/etc/init.d/dnsmasq restart")
 	main_controller.http_write_json({ code = 1, msg = "DNS Cache Cleared" })
 end
 
 function M.restart_service()
-	luci.sys.call("/etc/init.d/passwall2 restart")
+	sys.call("/etc/init.d/passwall2 restart")
 	main_controller.http_write_json({ code = 1, msg = "Service Restarted" })
 end
 
@@ -307,4 +311,3 @@ end
 -- Use main_controller.http_write_json(), main_controller.http_write_json_ok(), main_controller.http_write_json_error()
 
 return M
-
