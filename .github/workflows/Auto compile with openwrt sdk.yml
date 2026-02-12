@@ -394,9 +394,18 @@ jobs:
         run: |
           cd sdk
           ver=${{ matrix.ver }}
-          if [ $ver == "ipk" ]; then
-            config_apk_line=$(grep -n "USE_APK" Config-build.in | awk -F ':' '{print $1}')
-            [ -n "$config_apk_line" ] && sed -n $(expr ${config_apk_line} + 2)p Config-build.in | grep "default y" >/dev/null ; [ $? == 0 ] && sed -i "$(expr ${config_apk_line} + 2)s/y/n/" Config-build.in
+          if [ "$ver" == "ipk" ]; then
+            # Disable APK if building IPK format (handle gracefully if Config-build.in missing/different)
+            if [ -f "Config-build.in" ] && grep -q "USE_APK" Config-build.in 2>/dev/null; then
+              config_apk_line=$(grep -n "USE_APK" Config-build.in | head -1 | awk -F ':' '{print $1}')
+              if [ -n "$config_apk_line" ]; then
+                check_line=$((config_apk_line + 2))
+                if sed -n "${check_line}p" Config-build.in 2>/dev/null | grep -q "default y"; then
+                  sed -i "${check_line}s/y/n/" Config-build.in
+                  echo "Disabled APK for IPK build"
+                fi
+              fi
+            fi
           fi
           echo "CONFIG_ALL_NONSHARED=n" > .config
           echo "CONFIG_ALL_KMODS=n" >> .config
