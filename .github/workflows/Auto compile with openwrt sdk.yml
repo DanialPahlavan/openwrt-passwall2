@@ -417,8 +417,8 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-passwall2=m" >> .config
           make defconfig
           # AFTER defconfig, forcefully disable all kernel packages (defconfig may re-enable them via deps)
-          sed -i 's/CONFIG_PACKAGE_kernel=./# CONFIG_PACKAGE_kernel is not set/' .config
-          sed -i 's/CONFIG_PACKAGE_kmod-.*=./# \0 is not set/' .config
+          sed -i  '/^CONFIG_PACKAGE_kernel=/s/^CONFIG_\(.*\)=.*/# CONFIG_\1 is not set/' .config
+          sed -i '/^CONFIG_PACKAGE_kmod-/s/^CONFIG_\(.*\)=.*/# CONFIG_\1 is not set/' .config
           echo "make package/luci-app-passwall2/{clean,compile} -j$(nproc)"
           make package/luci-app-passwall2/{clean,compile} -j$(nproc) V=s || make package/luci-app-passwall2/{clean,compile} -j1 V=s
           mkdir upload
@@ -985,8 +985,8 @@ jobs:
 
           make defconfig
           # AFTER defconfig, forcefully disable all kernel packages (defconfig may re-enable them via deps)
-          sed -i 's/CONFIG_PACKAGE_kernel=./# CONFIG_PACKAGE_kernel is not set/' .config
-          sed -i 's/CONFIG_PACKAGE_kmod-.*=./# \0 is not set/' .config
+          sed -i '/^CONFIG_PACKAGE_kernel=/s/^CONFIG_\(.*\)=.*/# CONFIG_\1 is not set/' .config
+          sed -i '/^CONFIG_PACKAGE_kmod-/s/^CONFIG_\(.*\)=.*/# CONFIG_\1 is not set/' .config
 
       - name: ${{ matrix.platform }} compile with parallelization
         if: steps.should_build.outputs.should_build == 'true' && steps.should_build_format.outputs.should_build == 'true'
