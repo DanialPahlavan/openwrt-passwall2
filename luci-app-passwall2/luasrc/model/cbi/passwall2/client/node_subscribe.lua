@@ -1,7 +1,6 @@
 local api = require "luci.passwall2.api"
 local appname = api.appname
 local uci = api.uci
-local has_ss = api.is_finded("ss-redir")
 local has_ss_rust = api.is_finded("sslocal")
 local has_singbox = api.finded_com("sing-box")
 local has_xray = api.finded_com("xray")
@@ -12,10 +11,6 @@ local vmess_type = {}
 local vless_type = {}
 local hysteria2_type = {}
 local xray_version = api.get_app_version("xray")
-if has_ss then
-	local s = "shadowsocks-libev"
-	table.insert(ss_type, s)
-end
 if has_ss_rust then
 	local s = "shadowsocks-rust"
 	table.insert(ss_type, s)
@@ -43,6 +38,8 @@ if has_hysteria2 then
 	table.insert(hysteria2_type, s)
 end
 
+api.set_default_cbi()
+
 m = Map(appname)
 api.set_apply_on_parse(m)
 
@@ -69,6 +66,7 @@ o = s:option(DynamicList, "filter_keep_list", translate("Keep List"))
 
 if #ss_type > 0 then
 	o = s:option(ListValue, "ss_type", translatef("%s Node Use Type", "Shadowsocks"))
+	o:value("", translate("Auto"))
 	for key, value in pairs(ss_type) do
 		o:value(value)
 	end
@@ -76,6 +74,7 @@ end
 
 if #trojan_type > 0 then
 	o = s:option(ListValue, "trojan_type", translatef("%s Node Use Type", "Trojan"))
+	o:value("", translate("Auto"))
 	for key, value in pairs(trojan_type) do
 		o:value(value)
 	end
@@ -83,31 +82,25 @@ end
 
 if #vmess_type > 0 then
 	o = s:option(ListValue, "vmess_type", translatef("%s Node Use Type", "VMess"))
+	o:value("", translate("Auto"))
 	for key, value in pairs(vmess_type) do
 		o:value(value)
-	end
-	if has_xray then
-		o.default = "xray"
 	end
 end
 
 if #vless_type > 0 then
 	o = s:option(ListValue, "vless_type", translatef("%s Node Use Type", "VLESS"))
+	o:value("", translate("Auto"))
 	for key, value in pairs(vless_type) do
 		o:value(value)
-	end
-	if has_xray then
-		o.default = "xray"
 	end
 end
 
 if #hysteria2_type > 0 then
 	o = s:option(ListValue, "hysteria2_type", translatef("%s Node Use Type", "Hysteria2"))
+	o:value("", translate("Auto"))
 	for key, value in pairs(hysteria2_type) do
 		o:value(value)
-	end
-	if has_hysteria2 then
-		o.default = "hysteria2"
 	end
 end
 
@@ -115,14 +108,6 @@ if #ss_type > 0 or #trojan_type > 0 or #vmess_type > 0 or #vless_type > 0 or #hy
 	o.description = string.format("<font color='red'>%s</font>",
 			translate("The configured type also applies to the core specified when manually importing nodes."))
 end
-
-o = s:option(ListValue, "domain_strategy", "Sing-box " .. translate("Domain Strategy"), translate("Set the default domain resolution strategy for the sing-box node."))
-o.default = ""
-o:value("", translate("Auto"))
-o:value("prefer_ipv4", translate("Prefer IPv4"))
-o:value("prefer_ipv6", translate("Prefer IPv6"))
-o:value("ipv4_only", translate("IPv4 Only"))
-o:value("ipv6_only", translate("IPv6 Only"))
 
 ---- Subscribe Delete All
 o = s:option(DummyValue, "_stop", translate("Delete All Subscribe Node"))
@@ -141,7 +126,8 @@ o.cfgvalue = function(self, section)
 	 translate("Manual subscription All"))
 end
 
-s = m:section(TypedSection, "subscribe_list", "", "<font color='red'>" .. translate("When adding a new subscription, please save and apply before manually subscribing. If you only change the subscription URL, you can subscribe manually, and the system will save it automatically.") .. "</font>")
+local cfgname = "subscribe_list"
+s = m:section(TypedSection, cfgname, "", "<font color='red'>" .. translate("When adding a new subscription, please save and apply before manually subscribing. If you only change the subscription URL, you can subscribe manually, and the system will save it automatically.") .. "</font>")
 s.addremove = true
 s.anonymous = true
 s.sortable = true
@@ -161,7 +147,7 @@ o.validate = function(self, value, section)
 		return nil, translate("Remark cannot be empty.")
 	end
 	local duplicate = false
-	m.uci:foreach(appname, "subscribe_list", function(e)
+	m.uci:foreach(appname, cfgname, function(e)
 		if e[".name"] ~= section and e["remark"] and e["remark"]:lower() == value:lower() then
 			duplicate = true
 			return false
@@ -236,6 +222,11 @@ o.cfgvalue = function(self, section)
 	section, translate("Manual subscription"))
 end
 
+local sortable = Template(appname .. "/cbi/sortable")
+sortable.api = api
+sortable.target_cfgname = cfgname
+m:append(sortable)
+
 m:append(Template(appname .. "/node_subscribe/js"))
 
-return m
+return api.return_map(m)

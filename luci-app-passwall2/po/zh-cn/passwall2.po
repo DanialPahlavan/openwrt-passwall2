@@ -46,8 +46,8 @@ msgstr "规则列表"
 msgid "Access control"
 msgstr "访问控制"
 
-msgid "Watch Logs"
-msgstr "查看日志"
+msgid "Runtime Logs"
+msgstr "运行日志"
 
 msgid "Node Config"
 msgstr "节点配置"
@@ -117,6 +117,12 @@ msgstr "0为不使用"
 
 msgid "Current node: %s"
 msgstr "当前节点：%s"
+
+msgid "Direct domain DNS routing"
+msgstr "直连域名 DNS 分流"
+
+msgid "Please note that the program will not start if the format is incorrect!"
+msgstr "请注意，格式不正确将无法启动！"
 
 msgid "IP:Port mode acceptable, multi value split with english comma."
 msgstr "接受 IP:Port 形式的输入，多个以英文逗号分隔。"
@@ -370,6 +376,9 @@ msgstr "负载均衡"
 msgid "Node Addition Method"
 msgstr "节点添加方式"
 
+msgid "Backup Node Addition Method"
+msgstr "后备节点添加方式"
+
 msgid "Manual"
 msgstr "手动"
 
@@ -385,11 +394,15 @@ msgstr "节点匹配规则"
 msgid ""
 "Example: <code>^A && B && !C && D$</code><br>"
 "This means the node remark must start with A (^), include B, exclude C (!), and end with D ($).<br>"
-"Conditions are joined by <code>&&</code>, and their order does not affect the result."
+"Conditions are joined by <code>&&</code> (AND), and their order does not affect the result.<br>"
+"Multiple groups can be separated by <code>||</code> (OR), matching succeeds if any group matches.<br>"
+"Example: <code>A && B || C && D</code> means (A AND B) OR (C AND D)."
 msgstr ""
 "示例：<code>^A && B && !C && D$</code><br>"
 "表示节点备注需同时满足：以 A 开头（^）、包含 B、不包含 C（!）、并以 D 结尾（$）。<br>"
-"多个条件使用 <code>&&</code> 连接，条件顺序不影响结果。"
+"多个条件使用 <code>&&</code>（与）连接，条件顺序不影响结果。<br>"
+"多组条件之间可使用 <code>||</code>（或）分隔，任意一组匹配即视为成功。<br>"
+"示例：<code>A && B || C && D</code> 表示 (A 且 B) 或 (C 且 D)。"
 
 msgid "Balancing Strategy"
 msgstr "负载均衡策略"
@@ -426,6 +439,12 @@ msgstr "优选节点数量"
 
 msgid "The load balancer selects the optimal number of nodes, and traffic is randomly distributed among them."
 msgstr "负载均衡器选出最优节点的个数，流量将在这几个节点中随机分配。"
+
+msgid "Failure Tolerance (%)"
+msgstr "测速失败率容忍度（%）"
+
+msgid "The maximum acceptable speed test failure rate. For example, 1 means allowing a 1% failure rate."
+msgstr "最多可接受的测速失败率，例如 1 表示允许 1% 的测速失败率。"
 
 msgid "Shunt"
 msgstr "分流"
@@ -544,9 +563,6 @@ msgstr "原版"
 msgid "Transport Plugin"
 msgstr "传输层插件"
 
-msgid "Shadowsocks secondary encryption"
-msgstr "Shadowsocks 二次加密"
-
 msgid "Obfs Type"
 msgstr "混淆类型"
 
@@ -559,6 +575,9 @@ msgstr "认证类型"
 msgid "Auth Password"
 msgstr "认证密码"
 
+msgid "Client BBR Flow Control"
+msgstr "客户端 BBR 流控"
+
 msgid "Commands the client to use the BBR flow control algorithm"
 msgstr "命令客户端使用 BBR 流量控制算法"
 
@@ -569,10 +588,10 @@ msgid "Certificate fingerprint"
 msgstr "证书指纹"
 
 msgid "Max upload Mbps"
-msgstr "最大上行(Mbps)"
+msgstr "最大上行（Mbps）"
 
 msgid "Max download Mbps"
-msgstr "最大下行(Mbps)"
+msgstr "最大下行（Mbps）"
 
 msgid "QUIC stream receive window"
 msgstr "QUIC 流接收窗口"
@@ -582,6 +601,9 @@ msgstr "QUIC 连接接收窗口"
 
 msgid "QUIC concurrent bidirectional streams"
 msgstr "QUIC 并发双向流的最大数量"
+
+msgid "QUIC KeepAlive interval"
+msgstr "QUIC KeepAlive 间隔"
 
 msgid "Disable MTU detection"
 msgstr "禁用 MTU 检测"
@@ -649,8 +671,8 @@ msgstr "单位：分钟"
 msgid "stop automatically mode"
 msgstr "定时关闭模式"
 
-msgid "stop Time(Every day)"
-msgstr "关闭时间(每天)"
+msgid "stop Time"
+msgstr "关闭时间"
 
 msgid "stop Interval(Hour)"
 msgstr "关闭间隔(小时)"
@@ -658,8 +680,8 @@ msgstr "关闭间隔(小时)"
 msgid "start automatically mode"
 msgstr "定时开启模式"
 
-msgid "start Time(Every day)"
-msgstr "开启时间(每天)"
+msgid "start Time"
+msgstr "开启时间"
 
 msgid "start Interval(Hour)"
 msgstr "开启间隔(小时)"
@@ -667,8 +689,8 @@ msgstr "开启间隔(小时)"
 msgid "restart automatically mode"
 msgstr "定时重启模式"
 
-msgid "restart Time(Every day)"
-msgstr "重启时间(每天)"
+msgid "restart Time"
+msgstr "重启时间"
 
 msgid "restart Interval(Hour)"
 msgstr "重启间隔(小时)"
@@ -732,6 +754,12 @@ msgstr "劫持ICMP (PING)"
 
 msgid "Hijacking ICMPv6 (IPv6 PING)"
 msgstr "劫持ICMPv6 (IPv6 PING)"
+
+msgid "Direct IP List"
+msgstr "直连 IP 列表"
+
+msgid "These had been joined ip addresses will connect directly (not entering the core)."
+msgstr "加入的IP段将直连（不进入内核）。"
 
 msgid "Sniffing"
 msgstr "流量嗅探"
@@ -868,17 +896,14 @@ msgstr "回滚"
 msgid "Rollbacking..."
 msgstr "回滚中..."
 
-msgid "Enable auto update rules"
-msgstr "开启自动更新规则"
-
-msgid "Update Time(every day)"
-msgstr "更新时间(每天)"
+msgid "Update Time"
+msgstr "更新时间"
 
 msgid "Update Interval(hour)"
 msgstr "更新间隔(小时)"
 
-msgid "Update Mode"
-msgstr "更新模式"
+msgid "Auto Update Mode"
+msgstr "自动更新模式"
 
 msgid "Loop Mode"
 msgstr "循环"
@@ -976,9 +1001,6 @@ msgstr "移动中"
 msgid "App Update"
 msgstr "组件更新"
 
-msgid "Please confirm that your firmware supports FPU."
-msgstr "请确认你的固件支持FPU。"
-
 msgid "if you want to run from memory, change the path, /tmp beginning then save the application and update it manually."
 msgstr "如果你希望从内存中运行，请更改路径，/tmp 开头，然后保存应用后，再手动更新。"
 
@@ -1020,6 +1042,12 @@ msgstr "订阅网址不能为空。"
 
 msgid "Subscribe via proxy"
 msgstr "通过代理订阅"
+
+msgid "Update Once on Boot"
+msgstr "开机更新一次"
+
+msgid "Updates the subscription the first time runs automatically after each system boot."
+msgstr "路由每次启动后，首次自动运行时更新订阅。"
 
 msgid "Enable auto update subscribe"
 msgstr "开启自动更新订阅"
@@ -1086,6 +1114,21 @@ msgstr "IP 范围"
 
 msgid "Source Interface"
 msgstr "源接口"
+
+msgid "Bridge"
+msgstr "网桥"
+
+msgid "Wireless Adapter"
+msgstr "无线适配器"
+
+msgid "Ethernet Adapter"
+msgstr "以太网适配器"
+
+msgid "Tunnel Interface"
+msgstr "隧道接口"
+
+msgid "Invalid interface name"
+msgstr "无效的接口名称"
 
 msgid "Use Interface With ACLs"
 msgstr "使用接口控制"
@@ -1201,9 +1244,6 @@ msgstr "清空日志"
 msgid "Password"
 msgstr "密码"
 
-msgid "IV Check"
-msgstr "IV 检查"
-
 msgid "UDP over TCP"
 msgstr "TCP 封装 UDP"
 
@@ -1215,12 +1255,6 @@ msgstr "本地端口"
 
 msgid "Fast Open"
 msgstr "快速打开"
-
-msgid "Pre-connections"
-msgstr "预连接"
-
-msgid "Number of early established connections to reduce latency."
-msgstr "预连接的数量，用于降低延迟。"
 
 msgid "plugin"
 msgstr "插件"
@@ -1248,9 +1282,6 @@ msgstr "插件名称"
 
 msgid "Plugin Arguments"
 msgstr "插件参数"
-
-msgid "Naiveproxy Protocol"
-msgstr "Naiveproxy协议"
 
 msgid "User Level"
 msgstr "用户等级(level)"
@@ -1309,23 +1340,17 @@ msgstr "允许不安全连接"
 msgid "Whether unsafe connections are allowed. When checked, Certificate validation will be skipped."
 msgstr "是否允许不安全连接。当勾选时，将跳过证书验证。"
 
+msgid "Used when the node link does not include this parameter."
+msgstr "当节点链接未包含该参数时，将使用此设置。"
+
 msgid "%s Node Use Type"
 msgstr "%s 节点使用类型"
 
-msgid "Set the TUIC proxy server ip address"
-msgstr "指定远程TUIC服务器IP"
-
-msgid "TUIC User Password For Connect Remote Server"
-msgstr "用于远程TUIC服务器连接的密码"
-
-msgid "TUIC UserName For Local Socks"
-msgstr "用于本地Socks服务器连接的用户名"
-
-msgid "TUIC Password For Local Socks"
-msgstr "用于本地Socks服务器连接的密码"
-
 msgid "UDP relay mode"
 msgstr "UDP中继模式"
+
+msgid "Concurrent Tunnels"
+msgstr "并发隧道连接数"
 
 msgid "Congestion control algorithm"
 msgstr "拥塞控制算法"
@@ -1333,32 +1358,11 @@ msgstr "拥塞控制算法"
 msgid "Heartbeat interval(second)"
 msgstr "保活心跳包发送间隔（单位：秒）"
 
-msgid "Timeout for establishing a connection to server(second)"
-msgstr "连接超时时间（单位：秒）"
-
-msgid "Garbage collection interval(second)"
-msgstr "UDP数据包片残片清理间隔（单位：秒）"
-
-msgid "Garbage collection lifetime(second)"
-msgstr "UDP数据包残片在服务器的保留时间（单位：秒）"
-
 msgid "Disable SNI"
 msgstr "关闭SNI服务器名称指示"
 
 msgid "Enable 0-RTT QUIC handshake"
 msgstr "客户端启用 0-RTT QUIC 连接握手"
-
-msgid "TUIC send window"
-msgstr "发送窗口（无需确认即可发送的最大字节数：默认8Mb*2）"
-
-msgid "TUIC receive window"
-msgstr "接收窗口（无需确认即可接收的最大字节数：默认8Mb）"
-
-msgid "TUIC Maximum packet size the socks5 server can receive from external, in bytes"
-msgstr "TUIC socks5 服务器可以从外部接收的最大数据包大小（以字节为单位）"
-
-msgid "Set if the listening socket should be dual-stack"
-msgstr "设置监听套接字为双栈"
 
 msgid "<br />none: default, no masquerade, data sent is packets with no characteristics.<br />srtp: disguised as an SRTP packet, it will be recognized as video call data (such as FaceTime).<br />utp: packets disguised as uTP will be recognized as bittorrent downloaded data.<br />wechat-video: packets disguised as WeChat video calls.<br />dtls: disguised as DTLS 1.2 packet.<br />wireguard: disguised as a WireGuard packet. (not really WireGuard protocol)<br />dns: Disguising traffic as DNS requests."
 msgstr "<br />none：默认值，不进行伪装，发送的数据是没有特征的数据包。<br />srtp：伪装成 SRTP 数据包，会被识别为视频通话数据（如 FaceTime）。<br />utp：伪装成 uTP 数据包，会被识别为 BT 下载数据。<br />wechat-video：伪装成微信视频通话的数据包。<br />dtls：伪装成 DTLS 1.2 数据包。<br />wireguard：伪装成 WireGuard 数据包。(并不是真正的 WireGuard 协议)<br />dns：把流量伪装成 DNS 请求。"
@@ -1594,14 +1598,14 @@ msgstr "缓冲区大小"
 msgid "Buffer size for every connection (kB)"
 msgstr "每一个连接的缓冲区大小（kB）"
 
-msgid "Handshake Timeout"
-msgstr "握手超时 "
-
 msgid "Idle Timeout"
-msgstr "空闲超时 "
+msgstr "空闲超时"
 
-msgid "Hop Interval"
-msgstr "端口跳跃时间 "
+msgid "Hop Interval(second)"
+msgstr "端口跳跃间隔（秒）"
+
+msgid "Supports a fixed value or a random range (e.g., 30, 5-30), minimum 5."
+msgstr "支持固定值或随机范围（如 30 或 5-30），最小 5 秒。"
 
 msgid "HeartbeatPeriod(second)"
 msgstr "心跳周期（单位：秒）"
@@ -1611,9 +1615,6 @@ msgstr "覆盖连接目标地址"
 
 msgid "Override the connection destination address with the sniffed domain.<br />Otherwise use sniffed domain for routing only.<br />If using shunt nodes, configure the domain shunt rules correctly."
 msgstr "用探测出的域名覆盖连接目标地址。<br />否则仅将探测得到的域名用于路由。<br />如使用分流节点，请正确设置域名分流规则。"
-
-msgid "Override the connection destination address with the sniffed domain.<br />When enabled, traffic will match only by domain, ignoring IP rules.<br />If using shunt nodes, configure the domain shunt rules correctly."
-msgstr "用探测出的域名覆盖连接目标地址。<br />启用后仅使用域名进行流量匹配，将忽略IP规则。<br />如使用分流节点，请正确设置域名分流规则。"
 
 msgid "Handshake Server"
 msgstr "握手服务器"
@@ -1639,26 +1640,38 @@ msgstr "TLS 证书名称（CertName）"
 msgid "TLS is used to verify the leaf certificate name."
 msgstr "TLS 用于验证 leaf 证书的 name。"
 
+msgid "TLS Certificate (PEM)"
+msgstr "TLS 证书（PEM）"
+
+msgid "Full certificate (chain), PEM format."
+msgstr "完整证书（链），PEM 格式。"
+
+msgid "Fetch Manually"
+msgstr "手动获取"
+
+msgid "Fetch Failed"
+msgstr "获取失败"
+
 msgid "ECH Config"
 msgstr "ECH 配置"
 
 msgid "ECH Key"
 msgstr "ECH 密钥"
 
-msgid "PQ signature schemes"
-msgstr "后量子对等证书签名方案"
+msgid "ECH Query Domain"
+msgstr "ECH 查询域名"
 
-msgid "Disable adaptive sizing of TLS records"
-msgstr "禁用 TLS 记录的自适应大小调整"
-
-msgid "ECH Query Policy"
-msgstr "ECH 查询策略"
-
-msgid "Controls the policy used when performing DNS queries for ECH configuration."
-msgstr "控制使用 DNS 查询 ECH 配置时的策略。"
+msgid "Overrides the domain name used for ECH HTTPS record queries."
+msgstr "覆盖用于 ECH HTTPS 记录查询的域名。"
 
 msgid "Enable Multipath TCP, need to be enabled in both server and client configuration."
 msgstr "启用 Multipath TCP，需在服务端和客户端配置中同时启用。"
+
+msgid "An FinalMaskObject in JSON format, used for sharing."
+msgstr "JSON 格式的 FinalMaskObject，用来实现分享。"
+
+msgid "Custom finalmask overrides mkcp, hysteria2, fragment, noise, and related settings."
+msgstr "自定义 finalmask 将覆盖 mkcp、hysteria2、fragment、noise 等相关配置。"
 
 msgid "Fragment"
 msgstr "分片"
@@ -1678,8 +1691,8 @@ msgstr "分片包长"
 msgid "Fragmented packet length (byte)"
 msgstr "分片包长 (byte)"
 
-msgid "Fragment Interval"
-msgstr "分片间隔"
+msgid "Fragment Delay"
+msgstr "分片延迟"
 
 msgid "Fragmentation interval (ms)"
 msgstr "分片间隔（ms）"
@@ -1708,20 +1721,29 @@ msgstr "在 Xray 设置中勾选 “噪声” 以发送噪声包。"
 msgid "Xray Noise Packets"
 msgstr "Xray 噪声数据包"
 
-msgid "Packet"
-msgstr "数据包"
+msgid "Packet | Rand Length"
+msgstr "数据包 | Rand 长度"
 
 msgid "Delay (ms)"
 msgstr "延迟（ms）"
 
-msgid "IP Type"
-msgstr "IP 类型"
-
 msgid "If is domain name, The requested domain name will be resolved to IP before connect."
 msgstr "如果是域名，域名将在请求发出之前解析为 IP。"
 
+msgid "Domain DNS Resolve"
+msgstr "域名 DNS 解析"
+
+msgid "If the node address is a domain name, this DNS will be used for resolution."
+msgstr "如果节点地址是域名，则将使用此 DNS 进行解析。"
+
+msgid "Supports only Xray or Sing-box node types."
+msgstr "仅支持 Xray 或 Sing-box 类型节点。"
+
 msgid "Chain Proxy"
 msgstr "链式代理"
+
+msgid "Outbound Interface"
+msgstr "出站接口"
 
 msgid "Landing Node"
 msgstr "落地节点"
@@ -1729,15 +1751,24 @@ msgstr "落地节点"
 msgid "Only support a layer of proxy."
 msgstr "仅支持一层代理。"
 
+msgid "Send HWID"
+msgstr "发送 HWID"
+
+msgid "Some subscription providers may require a hardware identifier (HWID) for authentication."
+msgstr "某些订阅服务提供商可能需要硬件标识符（HWID）进行身份验证。"
+
+msgid "Enabling this option will send a hashed HWID when updating subscriptions."
+msgstr "启用此选项后，在更新订阅时将发送经过哈希处理的 HWID。"
+
+msgid "This may reveal limited hardware information. Enable only if you trust your provider."
+msgstr "这可能会泄露有限的硬件信息。仅在信任您的服务提供商时启用。"
+
 msgid ""
 "Chained proxy works only with Xray or Sing-box nodes.<br>"
 "You can only use manual or imported nodes as chained nodes."
 msgstr ""
-"链式代理仅支持 Xray 与 Sing-box 节点。<br>"
+"链式代理仅支持 Xray 或 Sing-box 节点。<br>"
 "仅支持手动添加或导入的节点用作链式节点。"
-
-msgid "Set the default domain resolution strategy for the sing-box node."
-msgstr "为 sing-box 节点设置默认的域名解析策略。"
 
 msgid "Prefer IPv4"
 msgstr "IPv4 优先"
@@ -2174,6 +2205,12 @@ msgstr "入口 %s:%s"
 msgid "Node: %s:%s, Weight: %s"
 msgstr "节点：%s:%s，权重：%s"
 
+msgid "[Rule update] instance is running; please try again later."
+msgstr "[规则更新]实例正在运行，请稍后再试..."
+
+msgid "[Subscription] instance is running; [Rule Update] queue and wait."
+msgstr "[订阅]实例正在运行，[规则更新]进入队列等待..."
+
 msgid "Start updating the rules..."
 msgstr "开始更新规则..."
 
@@ -2246,14 +2283,14 @@ msgstr "跳过 %s 节点，因未适配到 %s 核心程序，或未正确设置�
 msgid "Skip node: %s. Because Sing-Box does not support the %s protocol's %s transmission method, Xray needs to be used instead."
 msgstr "跳过节点：%s，因 Sing-Box 不支持 %s 协议的 %s 传输方式，需更换 Xray。"
 
-msgid "Xray unsupport %s plugin."
-msgstr "Xray 不支持 %s 插件。"
+msgid "%s unsupport SS %s plugin."
+msgstr "%s 不支持 %s 插件。"
 
 msgid "Plugin options Incomplete."
 msgstr "插件选项不完整。"
 
-msgid "shadowsocks-libev unsupport 2022 encryption."
-msgstr "shadowsocks-libev 不支持2022加密。"
+msgid "Please replace %s to support %s transmission method."
+msgstr "请更换 %s 以支持 %s 传输方式。"
 
 msgid "Please replace Xray or Sing-Box to support more transmission methods in Shadowsocks."
 msgstr "请更换 Xray 或 Sing-Box 来支持 Shadowsocks 更多的传输方式。"
@@ -2324,6 +2361,12 @@ msgstr "获取到的【%s】订阅内容为空，可能是订阅地址无效，�
 msgid "Proxy"
 msgstr "代理"
 
+msgid "[Subscription] instance is running; please try again later."
+msgstr "[订阅]实例正在运行，请稍后再试..."
+
+msgid "[Rule Update] instance is running; [Subscription] queue and wait."
+msgstr "[规则更新]实例正在运行，[订阅]进入队列等待..."
+
 msgid "Start subscribing..."
 msgstr "开始订阅..."
 
@@ -2341,3 +2384,18 @@ msgstr "发生错误, 正在恢复服务。"
 
 msgid "Subscription complete..."
 msgstr "订阅完毕..."
+
+msgid "Processing, please wait…"
+msgstr "正在处理，请稍候。"
+
+msgid "Invalid Realm URL."
+msgstr "Realm URL 不正确。"
+
+msgid "Gecko Packet Size (min)"
+msgstr "Gecko 包大小（最小）"
+
+msgid "Gecko Packet Size (max)"
+msgstr "Gecko 包大小（最大）"
+
+msgid "valid time (hh:mm)"
+msgstr "有效时间（hh:mm）"
