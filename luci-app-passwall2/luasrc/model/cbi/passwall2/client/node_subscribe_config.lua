@@ -1,11 +1,8 @@
 local api = require "luci.passwall2.api"
-local appname = api.appname
-
 api.set_default_cbi()
 
-m = Map(appname)
+m = Map()
 m.redirect = api.url("node_subscribe")
-api.set_apply_on_parse(m)
 
 if not arg[1] or not m:get(arg[1]) then
 	luci.http.redirect(m.redirect)
@@ -15,12 +12,11 @@ function m.on_before_save(self)
 	self:del(arg[1], "md5")
 end
 
-m:append(Template(appname .. "/cbi/nodes_listvalue_com"))
+m:appendTemplate("/cbi/nodes_listvalue_com")
 
 local has_ss_rust = api.is_finded("sslocal")
 local has_singbox = api.finded_com("sing-box")
 local has_xray = api.finded_com("xray")
-local has_hysteria2 = api.finded_com("hysteria")
 local ss_type = {}
 local trojan_type = {}
 local vmess_type = {}
@@ -49,10 +45,6 @@ if has_xray then
 		table.insert(hysteria2_type, s)
 	end
 end
-if has_hysteria2 then
-	local s = "hysteria2"
-	table.insert(hysteria2_type, s)
-end
 local nodes_table = {}
 for k, e in ipairs(api.get_valid_nodes()) do
 	if e.node_type == "normal" then
@@ -79,7 +71,7 @@ o.validate = function(self, value, section)
 		return nil, translate("Remark cannot be empty.")
 	end
 	local duplicate = false
-	m.uci:foreach(appname, "subscribe_list", function(e)
+	m:foreach("subscribe_list", function(e)
 		if e[".name"] ~= section and e["remark"] and e["remark"]:lower() == value:lower() then
 			duplicate = true
 			return false
@@ -93,9 +85,9 @@ end
 o.write = function(self, section, value)
 	local old = m:get(section, self.option) or ""
 	if old ~= value then
-		m.uci:foreach(appname, "nodes", function(e)
+		m:foreach("nodes", function(e)
 			if e["group"] and e["group"]:lower() == old:lower() then
-				m.uci:set(appname, e[".name"], "group", value)
+				self.map:set(e[".name"], "group", value)
 			end
 			if e["protocol"] and (e["protocol"] == "_balancing" or e["protocol"] == "_urltest") and e["node_group"] then
 				local gs = ""
@@ -107,7 +99,7 @@ o.write = function(self, section, value)
 					end
 				end
 				gs = api.trim(gs)
-				m.uci:set(appname, e[".name"], "node_group", gs)
+				self.map:set(e[".name"], "node_group", gs)
 			end
 		end)
 	end
@@ -223,11 +215,9 @@ if #hysteria2_type > 0 then
 
 	o = s:option(Value, "hysteria_up_mbps", "Hy/Hy2 " .. translate("Max upload Mbps"))
 	o.datatype = "uinteger"
-	o.default = "100"
 
 	o = s:option(Value, "hysteria_down_mbps", "Hy/Hy2 " .. translate("Max download Mbps"))
 	o.datatype = "uinteger"
-	o.default = "100"
 end
 
 o = s:option(Flag, "boot_update", translate("Update Once on Boot"), translate("Updates the subscription the first time runs automatically after each system boot."))
@@ -281,11 +271,12 @@ o:value("proxy", translate("Proxy"))
 
 o = s:option(Value, "user_agent", translate("User-Agent"))
 o.default = "v2rayN/9.99"
-o:value("curl", "Curl")
-o:value("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0", "Edge for Linux")
-o:value("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0", "Edge for Windows")
 o:value("passwall2", "PassWall2")
 o:value("v2rayN/9.99", "v2rayN")
+o:value("clash.meta/v9.99.99", "Clash.Meta")
+o:value("Shadowrocket/9999 CFNetwork/3896.100.1.2.1 Darwin/27.0.0 iPhone19,7", "Shadowrocket")
+o:value("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0", "Edge for Linux")
+o:value("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0", "Edge for Windows")
 
 o = s:option(ListValue, "chain_proxy", translate("Chain Proxy"))
 o:value("", translate("Close(Not use)"))
@@ -300,13 +291,13 @@ descrStr = translate(descrStr) .. "<br>" .. translate("Only support a layer of p
 o1 = s:option(ListValue, "preproxy_node", translate("Preproxy Node"))
 o1:depends({ ["chain_proxy"] = "1" })
 o1.description = descrStr
-o1.template = appname .. "/cbi/nodes_listvalue"
+o1.template = m:template_path("/cbi/nodes_listvalue")
 o1.group = {}
 
 o2 = s:option(ListValue, "to_node", translate("Landing Node"))
 o2:depends({ ["chain_proxy"] = "2" })
 o2.description = descrStr
-o2.template = appname .. "/cbi/nodes_listvalue"
+o2.template = m:template_path("/cbi/nodes_listvalue")
 o2.group = {}
 
 o3 = s:option(Value, "outbound_iface", translate("Outbound Interface"))
